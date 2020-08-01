@@ -51,7 +51,7 @@ fn clamp<T: std::cmp::PartialEq + std::cmp::PartialOrd>(a: T, low: T, high: T) -
     a
 }
 
-pub fn partial_diff(
+pub fn diff_partial(
     origin_img: &RgbaImage,
     before_img: &RgbaImage,
     after_img: &RgbaImage,
@@ -92,11 +92,41 @@ pub fn partial_diff(
             let dg2 = og - ag;
             let db2 = ob - ab;
             let da2 = oa - aa;
-            total -= (dr1 * dr1 + dg1 * dg1 + db1 * db1 + da1 * da1) as u64;
             total += (dr2 * dr2 + dg2 * dg2 + db2 * db2 + da2 * da2) as u64;
+            total -= (dr1 * dr1 + dg1 * dg1 + db1 * db1 + da1 * da1) as u64;
         }
     }
     ((total as f64) / (w * h * 4) as f64).sqrt() / 255.0
+}
+
+pub fn diff_full(origin_img: &RgbaImage, current_img: &RgbaImage) -> f64 {
+    let mut total = 0;
+    let (w, h) = origin_img.dimensions();
+    for x in 0..w {
+        for y in 0..h {
+            let mut pixel: &Rgba<u8> = origin_img.get_pixel(x as u32, y as u32);
+            let mut data = pixel.0;
+            let or = data[0] as i32;
+            let og = data[1] as i32;
+            let ob = data[2] as i32;
+            let oa = data[3] as i32;
+
+            pixel = current_img.get_pixel(x as u32, y as u32);
+            data = pixel.0;
+
+            let cr = data[0] as i32;
+            let cg = data[1] as i32;
+            let cb = data[2] as i32;
+            let ca = data[3] as i32;
+
+            let dr = or - cr;
+            let dg = og - cg;
+            let db = ob - cb;
+            let da = oa - ca;
+            total += (dr * dr + dg * dg + db * db + da * da) as u64;
+        }
+    }
+    (total as f64 / (w * h * 4) as f64).sqrt() / 255.0
 }
 
 #[cfg(test)]
@@ -124,5 +154,53 @@ mod tests {
 
         let c = compute_color(&img, &current_img, &lines, 255);
         assert_eq!(c, color);
+    }
+
+    #[test]
+    fn test_diff_partial() {
+        let width = 100;
+        let height = 100;
+        let mut img = image::ImageBuffer::new(width, height);
+        let before_img = image::ImageBuffer::new(width, height);
+        let color = Rgba([255, 0, 0, 255]);
+        let mut lines = Vec::new();
+        for y in 0..height {
+            for x in 0..width {
+                let pixel: &mut Rgba<u8> = img.get_pixel_mut(x as u32, y as u32);
+                pixel.0 = color.0;
+            }
+            lines.push(Scanline {
+                y: y as i64,
+                x1: 0,
+                x2: width as i64 - 1,
+            });
+        }
+        let score = diff_partial(&img, &before_img, &before_img, &lines, 0.0);
+        assert_eq!(score, 0.0);
+    }
+
+    #[test]
+    fn test_diff_full() {
+        let width = 100;
+        let height = 100;
+        let mut img = image::ImageBuffer::new(width, height);
+        let current_img = image::ImageBuffer::new(width, height);
+        let color = Rgba([255, 0, 0, 255]);
+        let mut lines = Vec::new();
+        for y in 0..height {
+            for x in 0..width {
+                let pixel: &mut Rgba<u8> = img.get_pixel_mut(x as u32, y as u32);
+                pixel.0 = color.0;
+            }
+            lines.push(Scanline {
+                y: y as i64,
+                x1: 0,
+                x2: width as i64 - 1,
+            });
+        }
+        let score1 = diff_full(&img, &current_img);
+        let score2 = diff_full(&img, &img);
+        assert_eq!(score1 > 0.0, true);
+        assert_eq!(score2, 0.0);
     }
 }
