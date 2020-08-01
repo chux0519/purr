@@ -1,8 +1,9 @@
 use crate::graphics::point::*;
-use crate::{Rgba, RgbaImage};
+use crate::graphics::scanline::*;
 
 // old-school way: line sweeping
-pub fn triangle(p0: Point, p1: Point, p2: Point, img: &mut RgbaImage, color: &Rgba<u8>) {
+pub fn triangle(p0: Point, p1: Point, p2: Point) -> Vec<Scanline> {
+    let mut lines = Vec::new();
     let mut p0 = p0;
     let mut p1 = p1;
     let mut p2 = p2;
@@ -32,11 +33,11 @@ pub fn triangle(p0: Point, p1: Point, p2: Point, img: &mut RgbaImage, color: &Rg
         if A.x > B.x {
             std::mem::swap(&mut A, &mut B);
         }
-        for x in A.x..=B.x {
-            // img.set(x as usize, y as usize, &color);
-            let pixel = img.get_pixel_mut(x as u32, y as u32);
-            pixel.0 = color.0;
-        }
+        lines.push(Scanline {
+            y,
+            x1: A.x,
+            x2: B.x,
+        });
     }
     // lower triangle
     for y in p1.y..=p2.y {
@@ -48,77 +49,12 @@ pub fn triangle(p0: Point, p1: Point, p2: Point, img: &mut RgbaImage, color: &Rg
         if A.x > B.x {
             std::mem::swap(&mut A, &mut B);
         }
-        for x in A.x..=B.x {
-            let pixel = img.get_pixel_mut(x as u32, y as u32);
-            pixel.0 = color.0;
-        }
-    }
-}
-
-// Barycentric math
-pub fn triangle_barycentric(points: &Vec<Point>, img: &mut RgbaImage, color: &Rgba<u8>) {
-    // find bound box
-    let mut bboxmin = Point {
-        x: img.width() as i64 - 1,
-        y: img.height() as i64 - 1,
-    };
-    let mut bboxmax = Point { x: 0, y: 0 };
-    let pclamp = Point {
-        x: img.width() as i64 - 1,
-        y: img.height() as i64 - 1,
-    };
-
-    for i in 0..points.len() {
-        bboxmin.x = std::cmp::max(0, std::cmp::min(bboxmin.x, points[i].x as i64));
-        bboxmin.y = std::cmp::max(0, std::cmp::min(bboxmin.y, points[i].y as i64));
-        bboxmax.x = std::cmp::min(pclamp.x, std::cmp::max(bboxmax.x, points[i].x as i64));
-        bboxmax.y = std::cmp::min(pclamp.y, std::cmp::max(bboxmax.y, points[i].y as i64));
+        lines.push(Scanline {
+            y,
+            x1: A.x,
+            x2: B.x,
+        });
     }
 
-    // using barycentric coordinates to compute
-    let mut p = Point { x: 0, y: 0 };
-    for x in bboxmin.x..=bboxmax.x {
-        p.x = x;
-        for y in bboxmin.y..=bboxmax.y {
-            p.y = y;
-            let bc: Vec3<f64> = barycentric(points, &p);
-            // (x, y, z) is barycentric also named (u, v, w)
-            if bc.x < 0f64 || bc.y < 0f64 || bc.z < 0f64 {
-                continue;
-            }
-            let pixel = img.get_pixel_mut(x as u32, y as u32);
-            pixel.0 = color.0;
-        }
-    }
-}
-
-fn barycentric(points: &Vec<Point>, p: &Point) -> Vec3<f64> {
-    // support triangle only
-    assert_eq!(points.len(), 3);
-    let v1 = Vec3::<f64> {
-        x: points[1].x as f64 - points[0].x as f64,
-        y: points[2].x as f64 - points[0].x as f64,
-        z: points[0].x as f64 - p.x as f64,
-    };
-    let v2 = Vec3::<f64> {
-        x: points[1].y as f64 - points[0].y as f64,
-        y: points[2].y as f64 - points[0].y as f64,
-        z: points[0].y as f64 - p.y as f64,
-    };
-
-    // (u, v, 1)
-    let center = v1 ^ v2;
-    if center.z.abs() < 1.0 {
-        return Vec3::<f64> {
-            x: -1f64,
-            y: 1f64,
-            z: 1f64,
-        };
-    }
-    // (1 - u -v, u, v)
-    Vec3::<f64> {
-        x: 1f64 - (center.x + center.y) as f64 / center.z as f64,
-        y: center.x as f64 / center.z as f64,
-        z: center.y as f64 / center.z as f64,
-    }
+    lines
 }
