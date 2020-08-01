@@ -6,13 +6,17 @@ fn main() {
     let height = 800;
     let mut img = image::ImageBuffer::new(width, height);
     let color = Rgba([0, 255, 255, 127]);
-    let p1 = Point { x: 100, y: 100 };
-    let p2 = Point { x: 50, y: 150 };
-    let p3 = Point { x: 150, y: 150 };
-    let lines = triangle(p1, p2, p3);
+    let triangle = Triangle {
+        a: Point { x: 100, y: 100 },
+        b: Point { x: 50, y: 150 },
+        c: Point { x: 150, y: 150 },
+    };
+    let lines = triangle.rasterize();
     for line in lines {
-        line.rasterize(&mut img, &color);
+        line.draw(&mut img, &color);
     }
-
     img.save("out.png").unwrap();
+    //
+    // let mut model = PurrModel::new(path, n, m, age);
+    // model.run();
 }

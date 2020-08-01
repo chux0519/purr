@@ -1,5 +1,18 @@
 use crate::graphics::point::*;
 use crate::graphics::scanline::*;
+use crate::graphics::Shape;
+
+pub struct Triangle {
+    pub a: Point,
+    pub b: Point,
+    pub c: Point,
+}
+
+impl Shape for Triangle {
+    fn rasterize(&self) -> Vec<Scanline> {
+        triangle(self.a, self.b, self.c)
+    }
+}
 
 // old-school way: line sweeping
 pub fn triangle(p0: Point, p1: Point, p2: Point) -> Vec<Scanline> {
