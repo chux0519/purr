@@ -27,6 +27,10 @@ args:
 
 ## Example
 
+using
+
+> -i ./assets/input.png -o ./output.png -n 100
+
 input image
 
 ![input.png](./assets/input.png)
