@@ -1,4 +1,5 @@
 // algo implement the core algorithm
+use crate::clamp;
 use crate::graphics::Scanline;
 use crate::{Rgba, RgbaImage};
 
@@ -39,16 +40,6 @@ pub fn compute_color(
     let g = clamp((gsum / count) as i32 >> 8, 0, 255) as u8;
     let b = clamp((bsum / count) as i32 >> 8, 0, 255) as u8;
     Rgba([r, g, b, alpha])
-}
-
-fn clamp<T: std::cmp::PartialEq + std::cmp::PartialOrd>(a: T, low: T, high: T) -> T {
-    if a < low {
-        return low;
-    }
-    if a > high {
-        return high;
-    }
-    a
 }
 
 pub fn diff_partial(
@@ -129,6 +120,52 @@ pub fn diff_full(origin_img: &RgbaImage, current_img: &RgbaImage) -> f64 {
     (total as f64 / (w * h * 4) as f64).sqrt() / 255.0
 }
 
+pub fn diff_partial_with_color(
+    origin_img: &RgbaImage,
+    before_img: &RgbaImage,
+    lines: &Vec<Scanline>,
+    score: f64,
+    color: Rgba<u8>,
+) -> f64 {
+    let (w, h) = origin_img.dimensions();
+    let mut total: u64 = ((score * 255.0) * (score * 255.0) * (w * h * 4) as f64) as u64;
+
+    for line in lines {
+        for x in line.x1..=line.x2 {
+            let mut pixel: &Rgba<u8> = origin_img.get_pixel(x as u32, line.y as u32);
+            let mut data = pixel.0;
+            let or = data[0] as i32;
+            let og = data[1] as i32;
+            let ob = data[2] as i32;
+            let oa = data[3] as i32;
+
+            pixel = before_img.get_pixel(x as u32, line.y as u32);
+            data = pixel.0;
+            let br = data[0] as i32;
+            let bg = data[1] as i32;
+            let bb = data[2] as i32;
+            let ba = data[3] as i32;
+
+            let ar = color[0] as i32;
+            let ag = color[1] as i32;
+            let ab = color[2] as i32;
+            let aa = color[3] as i32;
+
+            let dr1 = or - br;
+            let dg1 = og - bg;
+            let db1 = ob - bb;
+            let da1 = oa - ba;
+            let dr2 = or - ar;
+            let dg2 = og - ag;
+            let db2 = ob - ab;
+            let da2 = oa - aa;
+            total += (dr2 * dr2 + dg2 * dg2 + db2 * db2 + da2 * da2) as u64;
+            total -= (dr1 * dr1 + dg1 * dg1 + db1 * db1 + da1 * da1) as u64;
+        }
+    }
+    ((total as f64) / (w * h * 4) as f64).sqrt() / 255.0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -146,9 +183,9 @@ mod tests {
                 pixel.0 = color.0;
             }
             lines.push(Scanline {
-                y: y as i64,
+                y,
                 x1: 0,
-                x2: width as i64 - 1,
+                x2: width - 1,
             });
         }
 
@@ -170,9 +207,9 @@ mod tests {
                 pixel.0 = color.0;
             }
             lines.push(Scanline {
-                y: y as i64,
+                y,
                 x1: 0,
-                x2: width as i64 - 1,
+                x2: width - 1,
             });
         }
         let score = diff_partial(&img, &before_img, &before_img, &lines, 0.0);
@@ -193,9 +230,9 @@ mod tests {
                 pixel.0 = color.0;
             }
             lines.push(Scanline {
-                y: y as i64,
+                y,
                 x1: 0,
-                x2: width as i64 - 1,
+                x2: width - 1,
             });
         }
         let score1 = diff_full(&img, &current_img);

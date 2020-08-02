@@ -2,10 +2,12 @@ use crate::graphics::point::*;
 use crate::graphics::scanline::*;
 use crate::graphics::Shape;
 use crate::{clamp, degrees};
+use crate::{Rgba, RgbaImage};
 use rand::rngs::{SmallRng, ThreadRng};
 use rand::{Rng, SeedableRng};
 use rand_distr::StandardNormal;
 
+#[derive(Debug, Clone, Copy)]
 pub struct Triangle {
     pub a: Point,
     pub b: Point,
@@ -13,30 +15,32 @@ pub struct Triangle {
 }
 
 impl Shape for Triangle {
-    fn rasterize(&self) -> Vec<Scanline> {
-        triangle(self.a, self.b, self.c)
+    fn draw(&self, img: &mut RgbaImage, color: &Rgba<u8>) {
+        let (w, h) = img.dimensions();
+        let lines = self.rasterize(w, h);
+        for line in lines {
+            line.draw(img, &color);
+        }
+    }
+    fn rasterize(&self, w: u32, h: u32) -> Vec<Scanline> {
+        let mut lines = triangle(self.a, self.b, self.c);
+        for line in &mut lines {
+            line.crop(w, h);
+        }
+        lines
     }
     fn random(w: u32, h: u32, rng: &mut ThreadRng) -> Self {
-        let x1 = rng.gen_range(0, w);
-        let y1 = rng.gen_range(0, h);
+        let x1 = rng.gen_range(0, w as i32);
+        let y1 = rng.gen_range(0, h as i32);
         let x2 = x1 + rng.gen_range(0, 31) - 15;
         let y2 = y1 + rng.gen_range(0, 31) - 15;
         let x3 = x1 + rng.gen_range(0, 31) - 15;
         let y3 = y1 + rng.gen_range(0, 31) - 15;
 
         let mut triangle = Triangle {
-            a: Point {
-                x: x1 as i32,
-                y: y1 as i32,
-            },
-            b: Point {
-                x: x2 as i32,
-                y: y2 as i32,
-            },
-            c: Point {
-                x: x3 as i32,
-                y: y3 as i32,
-            },
+            a: Point { x: x1, y: y1 },
+            b: Point { x: x2, y: y2 },
+            c: Point { x: x3, y: y3 },
         };
         triangle.mutate(w, h, rng);
         triangle

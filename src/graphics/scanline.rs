@@ -1,3 +1,4 @@
+use crate::clamp;
 use crate::{Rgba, RgbaImage};
 
 #[derive(Debug, Clone, Copy)]
@@ -13,5 +14,11 @@ impl Scanline {
             let pixel: &mut Rgba<u8> = img.get_pixel_mut(x as u32, self.y as u32);
             pixel.0 = color.0;
         }
+    }
+
+    pub fn crop(&mut self, w: u32, h: u32) {
+        self.y = clamp(self.y, 0, h - 1);
+        self.x1 = clamp(self.x1, 0, w - 1);
+        self.x2 = clamp(self.x2, 0, w - 1);
     }
 }
