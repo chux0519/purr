@@ -23,10 +23,19 @@ fn main() {
                 .required(true)
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("number")
+                .short("n")
+                .long("number")
+                .help("number of shapes")
+                .required(true)
+                .takes_value(true),
+        )
         .get_matches();
     let input = matches.value_of("input").unwrap();
     let output = matches.value_of("output").unwrap();
-    let mut runner: PurrModelRunner<Triangle> = PurrModelRunner::default();
+    let shape_number = matches.value_of("number").unwrap().parse().unwrap();
+    let mut runner: PurrModelRunner<Triangle> = PurrModelRunner::new(shape_number);
     let model_ctx = PurrContext::new(input);
     let mut model = PurrModel::new(model_ctx, 1000, 4, 100);
     runner.run(&mut model, output);

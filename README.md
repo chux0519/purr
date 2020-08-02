@@ -17,7 +17,13 @@ Simple rules
 
 > cargo build --release
 > 
-> ./target/release/purr -i ./assets/input.png -o ./output.png
+> ./target/release/purr -i ./assets/input.png -o ./output.png -n 100
+
+args:
+
+- `-i`: input image
+- `-o`: output image
+- `-n`: number of shapes
 
 ## Example
 

@@ -159,6 +159,14 @@ impl<T: PurrShape> Default for PurrModelRunner<T> {
 }
 
 impl<T: PurrShape> PurrModelRunner<T> {
+    pub fn new(shape_number: u32) -> Self {
+        PurrModelRunner {
+            shape_number,
+            thread_number: 4,
+            states: Vec::new(),
+            frames: Vec::new(),
+        }
+    }
     pub fn run(&mut self, model: &mut PurrModel<T>, output: &str) {
         for _ in 0..self.shape_number {
             // TODO: multi threading
