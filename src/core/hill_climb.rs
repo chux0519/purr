@@ -1,37 +1,37 @@
 use crate::clamp;
+use crate::core::PurrShape;
 use crate::core::{compute_color, diff_partial_with_color};
 use crate::core::{PurrContext, PurrState};
-use crate::graphics::*;
 use rand::Rng;
 
-pub fn best_hill_climb(ctx: &mut PurrContext, n: u32, m: u32, age: u32) -> PurrState {
+pub fn best_hill_climb<T: PurrShape>(
+    ctx: &mut PurrContext,
+    n: u32,
+    m: u32,
+    age: u32,
+) -> PurrState<T> {
     let mut best_state = PurrState::default();
-    for i in 0..m {
+    for _ in 0..m {
         let best_rand_state = best_random_step(ctx, n);
         let climb_state = hill_climb(ctx, best_rand_state, age);
         if climb_state.score < best_state.score {
             best_state = climb_state;
         }
-        dbg!(format!(
-            "climb down, score: {}, best score: {}, epoch: {}, total: {}",
-            climb_state.score, best_state.score, i, m
-        ));
     }
-    dbg!(format!(
-        "best_hill_climb_state found, score: {}",
-        best_state.score
-    ));
+
     best_state
 }
 
-pub fn hill_climb(ctx: &mut PurrContext, state: PurrState, age: u32) -> PurrState {
+pub fn hill_climb<T: PurrShape>(
+    ctx: &mut PurrContext,
+    state: PurrState<T>,
+    age: u32,
+) -> PurrState<T> {
     // copy
     let mut cur_state = state;
     let mut best_state = state;
     // best result
     let mut i = 0;
-    let mut age = age;
-    age = 1;
     loop {
         if i >= age {
             // cannot find any better state
@@ -53,15 +53,7 @@ pub fn hill_climb(ctx: &mut PurrContext, state: PurrState, age: u32) -> PurrStat
             // find a better state
             best_state = cur_state;
             i = 0;
-        //dbg!(format!(
-        //    "hill_climb restart {}, score: {}",
-        //    i, best_state.score
-        //));
         } else {
-            //dbg!(format!(
-            //    "hill_climb epoch {}, score: {}",
-            //    i, cur_state.score
-            //));
             // undo, restore to original state
             cur_state = state;
             i += 1;
@@ -70,7 +62,7 @@ pub fn hill_climb(ctx: &mut PurrContext, state: PurrState, age: u32) -> PurrStat
     best_state
 }
 
-pub fn best_random_step(ctx: &mut PurrContext, n: u32) -> PurrState {
+pub fn best_random_step<T: PurrShape>(ctx: &mut PurrContext, n: u32) -> PurrState<T> {
     let mut best_state = PurrState::default();
     for _ in 0..n {
         let state = random_step(ctx);
@@ -80,9 +72,9 @@ pub fn best_random_step(ctx: &mut PurrContext, n: u32) -> PurrState {
     }
     best_state
 }
-pub fn random_step(ctx: &mut PurrContext) -> PurrState {
+pub fn random_step<T: PurrShape>(ctx: &mut PurrContext) -> PurrState<T> {
     // random generate triangle
-    let t = Triangle::random(ctx.w, ctx.h, &mut ctx.rng);
+    let t = T::random(ctx.w, ctx.h, &mut ctx.rng);
     let lines = t.rasterize(ctx.w, ctx.h);
     let color = compute_color(&ctx.origin_img, &ctx.current_img, &lines, 255);
     let score =
@@ -95,8 +87,3 @@ pub fn random_step(ctx: &mut PurrContext) -> PurrState {
     }
 }
 
-pub fn get_score(ctx: &PurrContext, shape: &Triangle) -> f64 {
-    let lines = shape.rasterize(ctx.w, ctx.h);
-    let color = compute_color(&ctx.origin_img, &ctx.current_img, &lines, 255);
-    diff_partial_with_color(&ctx.origin_img, &ctx.current_img, &lines, ctx.score, color)
-}

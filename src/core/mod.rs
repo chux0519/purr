@@ -9,23 +9,21 @@ use crate::{Rgba, RgbaImage};
 use rand::rngs::ThreadRng;
 use std::path::Path;
 
+pub trait PurrShape: Clone + Default + Copy + Shape {}
+
 #[derive(Debug, Clone, Copy)]
-pub struct PurrState {
-    shape: Triangle,
+pub struct PurrState<T> {
+    shape: T,
     color: Rgba<u8>,
     score: f64,
 }
 
-impl std::default::Default for PurrState {
+impl<T: PurrShape> Default for PurrState<T> {
     fn default() -> Self {
         PurrState {
             score: std::f64::MAX,
             color: Rgba([0, 0, 0, 0]),
-            shape: Triangle {
-                a: Point { x: 0, y: 0 },
-                b: Point { x: 0, y: 0 },
-                c: Point { x: 0, y: 0 },
-            },
+            shape: T::default(),
         }
     }
 }
@@ -39,7 +37,6 @@ pub struct PurrContext {
     pub rng: ThreadRng,
     pub score: f64,
     // TODO: heatmap pos
-    // TODO: generic
 }
 
 impl PurrContext {
@@ -67,8 +64,6 @@ impl PurrContext {
 
         let score = diff_full(&origin_img, &current_img);
 
-        dbg!(&color, &score);
-
         PurrContext {
             w,
             h,
@@ -81,41 +76,30 @@ impl PurrContext {
     }
 }
 
-pub struct PurrModel {
+pub struct PurrModel<T: PurrShape> {
     pub context: PurrContext,
     pub n: u32,
     pub m: u32,
     pub age: u32,
+    marker: std::marker::PhantomData<T>,
 }
 
-impl PurrModel {
-    pub fn new(context: PurrContext) -> Self {
+impl<T: PurrShape> PurrModel<T> {
+    pub fn new(context: PurrContext, n: u32, m: u32, age: u32) -> Self {
         PurrModel {
             context,
-            n: 1000,
-            m: 10,
-            age: 8,
+            n,
+            m,
+            age,
+            marker: std::marker::PhantomData::default(),
         }
     }
 
-    pub fn n(&mut self, i: u32) -> &mut Self {
-        self.n = i;
-        self
-    }
-    pub fn m(&mut self, i: u32) -> &mut Self {
-        self.m = i;
-        self
-    }
-    pub fn age(&mut self, i: u32) -> &mut Self {
-        self.age = i;
-        self
-    }
-
-    pub fn step(&mut self) -> PurrState {
+    pub fn step(&mut self) -> PurrState<T> {
         best_hill_climb(&mut self.context, self.n, self.m, self.age)
     }
 
-    pub fn add_state(&mut self, state: &PurrState) {
+    pub fn add_state(&mut self, state: &PurrState<T>) {
         state
             .shape
             .draw(&mut self.context.current_img, &state.color);
@@ -123,15 +107,14 @@ impl PurrModel {
     }
 }
 
-pub struct PurrModelRunner {
+pub struct PurrModelRunner<T: PurrShape> {
     pub shape_number: u32,
     pub thread_number: u32,
-    // TODO: generic
-    pub states: Vec<PurrState>,
+    pub states: Vec<PurrState<T>>,
     // TODO: heatmap
 }
 
-impl std::default::Default for PurrModelRunner {
+impl<T: PurrShape> Default for PurrModelRunner<T> {
     fn default() -> Self {
         PurrModelRunner {
             shape_number: 100,
@@ -141,8 +124,8 @@ impl std::default::Default for PurrModelRunner {
     }
 }
 
-impl PurrModelRunner {
-    pub fn run(&mut self, model: &mut PurrModel) {
+impl<T: PurrShape> PurrModelRunner<T> {
+    pub fn run(&mut self, model: &mut PurrModel<T>) {
         for i in 0..self.shape_number {
             // mpsc
             // let (rx, tx) = mpsc::unbound().unwrap();
@@ -165,7 +148,9 @@ impl PurrModelRunner {
             // self.shapes.append(shape);
             let state = model.step();
             model.add_state(&state);
-            self.dump_img(&model.context.current_img, &format!("out_{}.png", i));
+            let output = format!("out_{}.png", i);
+            println!("step: {}, score: {}, output: {}", i, state.score, &output);
+            self.dump_img(&model.context.current_img, &output);
             self.states.push(state);
         }
     }

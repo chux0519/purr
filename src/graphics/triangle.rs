@@ -1,3 +1,4 @@
+use crate::core::PurrShape;
 use crate::graphics::point::*;
 use crate::graphics::scanline::*;
 use crate::graphics::Shape;
@@ -12,6 +13,16 @@ pub struct Triangle {
     pub a: Point,
     pub b: Point,
     pub c: Point,
+}
+
+impl Default for Triangle {
+    fn default() -> Self {
+        Triangle {
+            a: Point { x: 0, y: 0 },
+            b: Point { x: 0, y: 0 },
+            c: Point { x: 0, y: 0 },
+        }
+    }
 }
 
 impl Shape for Triangle {
@@ -182,3 +193,5 @@ pub fn triangle(p0: Point, p1: Point, p2: Point) -> Vec<Scanline> {
 
     lines
 }
+
+impl PurrShape for Triangle {}
