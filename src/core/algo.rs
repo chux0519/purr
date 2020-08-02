@@ -1,7 +1,28 @@
 // algo implement the core algorithm
-use crate::clamp;
 use crate::graphics::Scanline;
+use crate::{alpha_compose, clamp};
 use crate::{Rgba, RgbaImage};
+
+pub fn average_color(img: &RgbaImage) -> Rgba<u8> {
+    let (w, h) = img.dimensions();
+    let mut r = 0;
+    let mut g = 0;
+    let mut b = 0;
+    for x in 0..w {
+        for y in 0..h {
+            let pixel: &Rgba<u8> = img.get_pixel(x as u32, y as u32);
+            let data = pixel.0;
+            r += data[0] as u32;
+            g += data[1] as u32;
+            b += data[2] as u32;
+        }
+    }
+    r /= w * h;
+    g /= w * h;
+    b /= w * h;
+
+    Rgba([r as u8, g as u8, b as u8, 255])
+}
 
 pub fn compute_color(
     origin_img: &RgbaImage,
@@ -140,16 +161,17 @@ pub fn diff_partial_with_color(
             let oa = data[3] as i32;
 
             pixel = before_img.get_pixel(x as u32, line.y as u32);
+            let composed_color = alpha_compose(pixel, &color);
             data = pixel.0;
             let br = data[0] as i32;
             let bg = data[1] as i32;
             let bb = data[2] as i32;
             let ba = data[3] as i32;
 
-            let ar = color[0] as i32;
-            let ag = color[1] as i32;
-            let ab = color[2] as i32;
-            let aa = color[3] as i32;
+            let ar = composed_color[0] as i32;
+            let ag = composed_color[1] as i32;
+            let ab = composed_color[2] as i32;
+            let aa = composed_color[3] as i32;
 
             let dr1 = or - br;
             let dg1 = og - bg;

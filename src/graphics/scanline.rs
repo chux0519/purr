@@ -1,4 +1,4 @@
-use crate::clamp;
+use crate::{alpha_compose, clamp};
 use crate::{Rgba, RgbaImage};
 
 #[derive(Debug, Clone, Copy)]
@@ -10,9 +10,12 @@ pub struct Scanline {
 
 impl Scanline {
     pub fn draw(&self, img: &mut RgbaImage, color: &Rgba<u8>) {
+        assert!(self.x1 <= self.x2);
         for x in self.x1..=self.x2 {
             let pixel: &mut Rgba<u8> = img.get_pixel_mut(x as u32, self.y as u32);
-            pixel.0 = color.0;
+            // (foreground.r * alpha) + (background.r * (1.0 - alpha));
+            let c = alpha_compose(pixel, color);
+            pixel.0 = c.0;
         }
     }
 
@@ -22,3 +25,4 @@ impl Scanline {
         self.x2 = clamp(self.x2, 0, w - 1);
     }
 }
+

@@ -17,6 +17,10 @@ pub fn best_hill_climb<T: PurrShape>(
         if climb_state.score < best_state.score {
             best_state = climb_state;
         }
+        println!(
+            "{}x random: {} -> {}x hill climb: {}",
+            n, best_rand_state.score, age, best_state.score
+        );
     }
 
     best_state
@@ -40,6 +44,12 @@ pub fn hill_climb<T: PurrShape>(
         cur_state.shape.mutate(ctx.w, ctx.h, &mut ctx.rng);
         let lines = cur_state.shape.rasterize(ctx.w, ctx.h);
         let alpha = clamp(ctx.rng.gen_range(0, 21) as i32 - 10 + 128, 1, 255);
+        if lines.is_empty() {
+            cur_state = state;
+            i += 1;
+            continue;
+        }
+        assert!(!lines.is_empty());
         cur_state.color = compute_color(&ctx.origin_img, &ctx.current_img, &lines, alpha as u8);
         cur_state.score = diff_partial_with_color(
             &ctx.origin_img,
@@ -49,7 +59,7 @@ pub fn hill_climb<T: PurrShape>(
             cur_state.color,
         );
 
-        if cur_state.score < state.score {
+        if cur_state.score < best_state.score {
             // find a better state
             best_state = cur_state;
             i = 0;
@@ -76,7 +86,11 @@ pub fn random_step<T: PurrShape>(ctx: &mut PurrContext) -> PurrState<T> {
     // random generate triangle
     let t = T::random(ctx.w, ctx.h, &mut ctx.rng);
     let lines = t.rasterize(ctx.w, ctx.h);
-    let color = compute_color(&ctx.origin_img, &ctx.current_img, &lines, 255);
+    if lines.is_empty() {
+        return PurrState::default();
+    }
+    assert!(!lines.is_empty());
+    let color = compute_color(&ctx.origin_img, &ctx.current_img, &lines, 128);
     let score =
         diff_partial_with_color(&ctx.origin_img, &ctx.current_img, &lines, ctx.score, color);
 

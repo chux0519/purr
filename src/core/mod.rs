@@ -6,7 +6,10 @@ pub use hill_climb::*;
 
 use crate::graphics::*;
 use crate::{Rgba, RgbaImage};
-use rand::rngs::ThreadRng;
+use image::imageops::FilterType;
+use image::GenericImageView;
+use rand::rngs::SmallRng;
+use rand::SeedableRng;
 use std::path::Path;
 
 pub trait PurrShape: Clone + Default + Copy + Shape {}
@@ -34,27 +37,54 @@ pub struct PurrContext {
     pub origin_img: RgbaImage,
     pub current_img: RgbaImage,
     pub lines: Vec<Scanline>, // one vec per thread
-    pub rng: ThreadRng,
+    pub rng: SmallRng,
     pub score: f64,
     // TODO: heatmap pos
 }
 
 impl PurrContext {
     pub fn new<P: AsRef<Path>>(input: P) -> Self {
-        let origin_img = image::open(&input).unwrap().into_rgba();
-        let (w, h) = origin_img.dimensions();
+        let img = image::open(&input).unwrap();
+        let (width, height) = img.dimensions();
+        let mut w = 0;
+        let mut h = 0;
+        let max_len = 600;
+        let origin_img = if width > height && width > max_len {
+            // scale down to max_len
+            w = max_len;
+            h = (height as f64 / width as f64 * w as f64) as u32;
+            let scaled = img.resize(w, h, FilterType::Triangle);
+            let img_rgba = scaled.into_rgba();
+            let (new_w, new_h) = img_rgba.dimensions();
+            w = new_w;
+            h = new_h;
+            println!(
+                "image too large, resize from {}x{} to {}x{}",
+                width, height, w, h
+            );
+            img_rgba
+        } else if height > width && height > max_len {
+            h = max_len;
+            w = (width as f64 / height as f64 * h as f64) as u32;
+            let scaled = img.resize(w, h, FilterType::Triangle);
+            let img_rgba = scaled.into_rgba();
+            let (new_w, new_h) = img_rgba.dimensions();
+            w = new_w;
+            h = new_h;
+            println!(
+                "image too large, resize from {}x{} to {}x{}",
+                width, height, w, h
+            );
+            img_rgba
+        } else {
+            w = width;
+            h = height;
+            img.into_rgba()
+        };
 
         // init current_img
         let mut current_img = image::ImageBuffer::new(w, h);
-        let mut lines = Vec::new();
-        for y in 0..h {
-            lines.push(Scanline {
-                y,
-                x1: 0,
-                x2: w - 1,
-            });
-        }
-        let color = compute_color(&origin_img, &current_img, &lines, 255);
+        let color = average_color(&origin_img);
         for y in 0..h {
             for x in 0..w {
                 let pixel: &mut Rgba<u8> = current_img.get_pixel_mut(x as u32, y as u32);
@@ -70,7 +100,7 @@ impl PurrContext {
             origin_img,
             current_img,
             lines: Vec::new(),
-            rng: rand::thread_rng(),
+            rng: SmallRng::from_entropy(),
             score,
         }
     }

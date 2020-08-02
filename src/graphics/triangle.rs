@@ -4,8 +4,8 @@ use crate::graphics::scanline::*;
 use crate::graphics::Shape;
 use crate::{clamp, degrees};
 use crate::{Rgba, RgbaImage};
-use rand::rngs::{SmallRng, ThreadRng};
-use rand::{Rng, SeedableRng};
+use rand::rngs::SmallRng;
+use rand::Rng;
 use rand_distr::StandardNormal;
 
 #[derive(Debug, Clone, Copy)]
@@ -34,15 +34,20 @@ impl Shape for Triangle {
         }
     }
     fn rasterize(&self, w: u32, h: u32) -> Vec<Scanline> {
-        let mut lines = triangle(self.a, self.b, self.c);
-        for line in &mut lines {
+        let lines = triangle(self.a, self.b, self.c);
+        let mut visible_lines: Vec<Scanline> = lines
+            .into_iter()
+            .filter(|l| l.x1 <= l.x2 && l.x2 > 0 && l.x1 < w && l.y > 0 && l.y < h)
+            .collect();
+        for line in &mut visible_lines {
             line.crop(w, h);
         }
-        lines
+        visible_lines
     }
-    fn random(w: u32, h: u32, rng: &mut ThreadRng) -> Self {
+    fn random(w: u32, h: u32, rng: &mut SmallRng) -> Self {
         let x1 = rng.gen_range(0, w as i32);
         let y1 = rng.gen_range(0, h as i32);
+        // println!("({}, {})", x1, y1);
         let x2 = x1 + rng.gen_range(0, 31) - 15;
         let y2 = y1 + rng.gen_range(0, 31) - 15;
         let x3 = x1 + rng.gen_range(0, 31) - 15;
@@ -56,43 +61,42 @@ impl Shape for Triangle {
         triangle.mutate(w, h, rng);
         triangle
     }
-    fn mutate(&mut self, w: u32, h: u32, rng: &mut ThreadRng) {
+    fn mutate(&mut self, w: u32, h: u32, rng: &mut SmallRng) {
         let m = 16;
-        let mut rnd = SmallRng::from_entropy();
         loop {
             match rng.gen_range(0, 3) {
                 0 => {
                     self.a.x = clamp(
-                        self.a.x + (16.0 * rnd.sample::<f64, _>(StandardNormal)) as i32,
+                        self.a.x + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
                         -m,
                         w as i32 - 1 + m,
                     );
                     self.a.y = clamp(
-                        self.a.y + (16.0 * rnd.sample::<f64, _>(StandardNormal)) as i32,
+                        self.a.y + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
                         -m,
                         h as i32 - 1 + m,
                     );
                 }
                 1 => {
                     self.b.x = clamp(
-                        self.b.x + (16.0 * rnd.sample::<f64, _>(StandardNormal)) as i32,
+                        self.b.x + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
                         -m,
                         w as i32 - 1 + m,
                     );
                     self.b.y = clamp(
-                        self.b.y + (16.0 * rnd.sample::<f64, _>(StandardNormal)) as i32,
+                        self.b.y + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
                         -m,
                         h as i32 - 1 + m,
                     );
                 }
                 2 => {
                     self.c.x = clamp(
-                        self.c.x + (16.0 * rnd.sample::<f64, _>(StandardNormal)) as i32,
+                        self.c.x + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
                         -m,
                         w as i32 - 1 + m,
                     );
                     self.c.y = clamp(
-                        self.c.y + (16.0 * rnd.sample::<f64, _>(StandardNormal)) as i32,
+                        self.c.y + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
                         -m,
                         h as i32 - 1 + m,
                     );
@@ -159,7 +163,7 @@ pub fn triangle(p0: Point, p1: Point, p2: Point) -> Vec<Scanline> {
     // scan the upper triangle
     let total_height = p2.y - p0.y;
     // upper triangle
-    for y in p0.y..=p1.y {
+    for y in p0.y..p1.y {
         let segment_height = p1.y - p0.y + 1;
         let alpha = (y - p0.y) as f64 / total_height as f64;
         let beta = (y - p0.y) as f64 / segment_height as f64;
