@@ -47,7 +47,6 @@ impl Shape for Triangle {
     fn random(w: u32, h: u32, rng: &mut SmallRng) -> Self {
         let x1 = rng.gen_range(0, w as i32);
         let y1 = rng.gen_range(0, h as i32);
-        // println!("({}, {})", x1, y1);
         let x2 = x1 + rng.gen_range(0, 31) - 15;
         let y2 = y1 + rng.gen_range(0, 31) - 15;
         let x3 = x1 + rng.gen_range(0, 31) - 15;

@@ -6,10 +6,13 @@ pub use hill_climb::*;
 
 use crate::graphics::*;
 use crate::{Rgba, RgbaImage};
+use image::gif::Encoder;
 use image::imageops::FilterType;
+use image::Frame;
 use image::GenericImageView;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
+use std::fs::OpenOptions;
 use std::path::Path;
 
 pub trait PurrShape: Clone + Default + Copy + Shape {}
@@ -141,7 +144,7 @@ pub struct PurrModelRunner<T: PurrShape> {
     pub shape_number: u32,
     pub thread_number: u32,
     pub states: Vec<PurrState<T>>,
-    // TODO: heatmap
+    pub frames: Vec<Frame>, // TODO: heatmap
 }
 
 impl<T: PurrShape> Default for PurrModelRunner<T> {
@@ -150,13 +153,15 @@ impl<T: PurrShape> Default for PurrModelRunner<T> {
             shape_number: 100,
             thread_number: 4,
             states: Vec::new(),
+            frames: Vec::new(),
         }
     }
 }
 
 impl<T: PurrShape> PurrModelRunner<T> {
-    pub fn run(&mut self, model: &mut PurrModel<T>) {
-        for i in 0..self.shape_number {
+    pub fn run(&mut self, model: &mut PurrModel<T>, output: &str) {
+        for _ in 0..self.shape_number {
+            // TODO: multi threading
             // mpsc
             // let (rx, tx) = mpsc::unbound().unwrap();
             // threadpool.execute(|| {
@@ -178,11 +183,20 @@ impl<T: PurrShape> PurrModelRunner<T> {
             // self.shapes.append(shape);
             let state = model.step();
             model.add_state(&state);
-            let output = format!("out_{}.png", i);
-            println!("step: {}, score: {}, output: {}", i, state.score, &output);
-            self.dump_img(&model.context.current_img, &output);
             self.states.push(state);
+            self.frames
+                .push(Frame::new(model.context.current_img.clone()));
         }
+        self.dump_img(&model.context.current_img, output);
+        //let file_out = OpenOptions::new()
+        //    .write(true)
+        //    .create(true)
+        //    .open("out.gif")
+        //    .unwrap();
+        //let mut encoder = Encoder::new(file_out);
+        //encoder
+        //    .encode_frames(self.frames.clone().into_iter())
+        //    .unwrap();
     }
 
     pub fn dump_img(&self, img: &RgbaImage, out: &str) {
