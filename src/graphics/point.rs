@@ -2,15 +2,15 @@ use std::ops;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Point {
-    pub x: i64,
-    pub y: i64,
+    pub x: i32,
+    pub y: i32,
 }
 
 impl Point {
     pub fn mul(self, x: f64) -> Self {
         Self {
-            x: (self.x as f64 * x) as i64,
-            y: (self.y as f64 * x) as i64,
+            x: (self.x as f64 * x) as i32,
+            y: (self.y as f64 * x) as i32,
         }
     }
 }

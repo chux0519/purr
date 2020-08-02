@@ -1,6 +1,10 @@
 use crate::graphics::point::*;
 use crate::graphics::scanline::*;
 use crate::graphics::Shape;
+use crate::{clamp, degrees};
+use rand::rngs::{SmallRng, ThreadRng};
+use rand::{Rng, SeedableRng};
+use rand_distr::StandardNormal;
 
 pub struct Triangle {
     pub a: Point,
@@ -11,6 +15,109 @@ pub struct Triangle {
 impl Shape for Triangle {
     fn rasterize(&self) -> Vec<Scanline> {
         triangle(self.a, self.b, self.c)
+    }
+    fn random(w: u32, h: u32, rng: &mut ThreadRng) -> Self {
+        let x1 = rng.gen_range(0, w);
+        let y1 = rng.gen_range(0, h);
+        let x2 = x1 + rng.gen_range(0, 31) - 15;
+        let y2 = y1 + rng.gen_range(0, 31) - 15;
+        let x3 = x1 + rng.gen_range(0, 31) - 15;
+        let y3 = y1 + rng.gen_range(0, 31) - 15;
+
+        let mut triangle = Triangle {
+            a: Point {
+                x: x1 as i32,
+                y: y1 as i32,
+            },
+            b: Point {
+                x: x2 as i32,
+                y: y2 as i32,
+            },
+            c: Point {
+                x: x3 as i32,
+                y: y3 as i32,
+            },
+        };
+        triangle.mutate(w, h, rng);
+        triangle
+    }
+    fn mutate(&mut self, w: u32, h: u32, rng: &mut ThreadRng) {
+        let m = 16;
+        let mut rnd = SmallRng::from_entropy();
+        loop {
+            match rng.gen_range(0, 3) {
+                0 => {
+                    self.a.x = clamp(
+                        self.a.x + (16.0 * rnd.sample::<f64, _>(StandardNormal)) as i32,
+                        -m,
+                        w as i32 - 1 + m,
+                    );
+                    self.a.y = clamp(
+                        self.a.y + (16.0 * rnd.sample::<f64, _>(StandardNormal)) as i32,
+                        -m,
+                        h as i32 - 1 + m,
+                    );
+                }
+                1 => {
+                    self.b.x = clamp(
+                        self.b.x + (16.0 * rnd.sample::<f64, _>(StandardNormal)) as i32,
+                        -m,
+                        w as i32 - 1 + m,
+                    );
+                    self.b.y = clamp(
+                        self.b.y + (16.0 * rnd.sample::<f64, _>(StandardNormal)) as i32,
+                        -m,
+                        h as i32 - 1 + m,
+                    );
+                }
+                2 => {
+                    self.c.x = clamp(
+                        self.c.x + (16.0 * rnd.sample::<f64, _>(StandardNormal)) as i32,
+                        -m,
+                        w as i32 - 1 + m,
+                    );
+                    self.c.y = clamp(
+                        self.c.y + (16.0 * rnd.sample::<f64, _>(StandardNormal)) as i32,
+                        -m,
+                        h as i32 - 1 + m,
+                    );
+                }
+                _ => unreachable!(),
+            }
+
+            if self.valid() {
+                break;
+            }
+        }
+    }
+    fn valid(&self) -> bool {
+        let min_degree = 15.0;
+        let mut x1 = (self.b.x - self.a.x) as f64;
+        let mut y1 = (self.b.y - self.a.y) as f64;
+        let mut x2 = (self.c.x - self.a.x) as f64;
+        let mut y2 = (self.c.y - self.a.y) as f64;
+        let mut d1 = (x1 * x1 + y1 * y1).sqrt();
+        let mut d2 = (x2 * x2 + y2 * y2).sqrt();
+        x1 /= d1;
+        y1 /= d1;
+        x2 /= d2;
+        y2 /= d2;
+        let a1 = degrees((x1 * x2 + y1 * y2).acos());
+
+        x1 = (self.a.x - self.b.x) as f64;
+        y1 = (self.a.y - self.b.y) as f64;
+        x2 = (self.c.x - self.b.x) as f64;
+        y2 = (self.c.y - self.b.y) as f64;
+        d1 = (x1 * x1 + y1 * y1).sqrt();
+        d2 = (x2 * x2 + y2 * y2).sqrt();
+        x1 /= d1;
+        y1 /= d1;
+        x2 /= d2;
+        y2 /= d2;
+        let a2 = degrees((x1 * x2 + y1 * y2).acos());
+        let a3 = 180.0 - a1 - a2;
+
+        a1 > min_degree && a2 > min_degree && a3 > min_degree
     }
 }
 
@@ -41,15 +148,15 @@ pub fn triangle(p0: Point, p1: Point, p2: Point) -> Vec<Scanline> {
         let segment_height = p1.y - p0.y + 1;
         let alpha = (y - p0.y) as f64 / total_height as f64;
         let beta = (y - p0.y) as f64 / segment_height as f64;
-        let mut A = p0 + (p2 - p0).mul(alpha);
-        let mut B = p0 + (p1 - p0).mul(beta);
-        if A.x > B.x {
-            std::mem::swap(&mut A, &mut B);
+        let mut a = p0 + (p2 - p0).mul(alpha);
+        let mut b = p0 + (p1 - p0).mul(beta);
+        if a.x > b.x {
+            std::mem::swap(&mut a, &mut b);
         }
         lines.push(Scanline {
-            y,
-            x1: A.x,
-            x2: B.x,
+            y: y as u32,
+            x1: a.x as u32,
+            x2: b.x as u32,
         });
     }
     // lower triangle
@@ -57,15 +164,15 @@ pub fn triangle(p0: Point, p1: Point, p2: Point) -> Vec<Scanline> {
         let segment_height = p2.y - p1.y + 1;
         let alpha = (y - p0.y) as f64 / total_height as f64;
         let beta = (y - p1.y) as f64 / segment_height as f64;
-        let mut A = p0 + (p2 - p0).mul(alpha);
-        let mut B = p1 + (p2 - p1).mul(beta);
-        if A.x > B.x {
-            std::mem::swap(&mut A, &mut B);
+        let mut a = p0 + (p2 - p0).mul(alpha);
+        let mut b = p1 + (p2 - p1).mul(beta);
+        if a.x > b.x {
+            std::mem::swap(&mut a, &mut b);
         }
         lines.push(Scanline {
-            y,
-            x1: A.x,
-            x2: B.x,
+            y: y as u32,
+            x1: a.x as u32,
+            x2: b.x as u32,
         });
     }
 

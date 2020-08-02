@@ -2,9 +2,9 @@ use crate::{Rgba, RgbaImage};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Scanline {
-    pub y: i64,
-    pub x1: i64,
-    pub x2: i64,
+    pub y: u32,
+    pub x1: u32,
+    pub x2: u32,
 }
 
 impl Scanline {
