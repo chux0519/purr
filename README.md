@@ -27,11 +27,11 @@ input image
 
 output image
 
-![input.png](./assets/output.png)
+![output.png](./assets/output.png)
 
 process
 
-![output.gif](./assets/out.gif)
+![out.gif](./assets/out.gif)
 
 ## TODO
 
