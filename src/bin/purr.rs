@@ -31,11 +31,23 @@ fn main() {
                 .required(true)
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("thread")
+                .short("t")
+                .long("thread")
+                .help("numebr of threads")
+                .takes_value(true),
+        )
         .get_matches();
     let input = matches.value_of("input").unwrap();
     let output = matches.value_of("output").unwrap();
     let shape_number = matches.value_of("number").unwrap().parse().unwrap();
-    let mut runner: PurrModelRunner<Triangle> = PurrModelRunner::new(shape_number, 4);
+    let thread_number = matches
+        .value_of("thread")
+        .unwrap_or(&num_cpus::get().to_string())
+        .parse()
+        .unwrap();
+    let mut runner: PurrModelRunner<Triangle> = PurrModelRunner::new(shape_number, thread_number);
     let model_ctx = PurrContext::new(input);
     let mut model = PurrModel::new(model_ctx, 1000, 16, 100);
     runner.run(&mut model, output);

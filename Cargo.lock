@@ -336,6 +336,7 @@ dependencies = [
  "clap",
  "crossbeam-channel",
  "image",
+ "num_cpus",
  "rand",
  "rand_distr",
  "threadpool",
