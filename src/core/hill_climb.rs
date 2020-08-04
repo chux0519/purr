@@ -17,10 +17,10 @@ pub fn best_hill_climb<T: PurrShape>(
         if climb_state.score < best_state.score {
             best_state = climb_state;
         }
-        println!(
-            "{}x random: {} -> {}x hill climb: {}",
-            n, best_rand_state.score, age, best_state.score
-        );
+        //println!(
+        //    "{}x random: {} -> {}x hill climb: {}",
+        //    n, best_rand_state.score, age, best_state.score
+        //);
     }
 
     best_state

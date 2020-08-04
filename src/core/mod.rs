@@ -1,11 +1,15 @@
 pub mod algo;
 pub mod hill_climb;
+pub mod worker;
 
 pub use algo::*;
 pub use hill_climb::*;
+pub use worker::*;
 
 use crate::graphics::*;
 use crate::{Rgba, RgbaImage};
+use crossbeam_channel::bounded;
+use crossbeam_channel::{Receiver, Sender};
 use image::gif::Encoder;
 use image::imageops::FilterType;
 use image::Frame;
@@ -14,8 +18,9 @@ use rand::rngs::SmallRng;
 use rand::SeedableRng;
 use std::fs::OpenOptions;
 use std::path::Path;
+use threadpool::ThreadPool;
 
-pub trait PurrShape: Clone + Default + Copy + Shape {}
+pub trait PurrShape: Clone + Default + Copy + Shape + Send {}
 
 #[derive(Debug, Clone, Copy)]
 pub struct PurrState<T> {
@@ -34,12 +39,12 @@ impl<T: PurrShape> Default for PurrState<T> {
     }
 }
 
+#[derive(Clone)]
 pub struct PurrContext {
     pub w: u32,
     pub h: u32,
     pub origin_img: RgbaImage,
     pub current_img: RgbaImage,
-    pub lines: Vec<Scanline>, // one vec per thread
     pub rng: SmallRng,
     pub score: f64,
     // TODO: heatmap pos
@@ -102,13 +107,13 @@ impl PurrContext {
             h,
             origin_img,
             current_img,
-            lines: Vec::new(),
             rng: SmallRng::from_entropy(),
             score,
         }
     }
 }
 
+#[derive(Clone)]
 pub struct PurrModel<T: PurrShape> {
     pub context: PurrContext,
     pub n: u32,
@@ -145,6 +150,8 @@ pub struct PurrModelRunner<T: PurrShape> {
     pub thread_number: u32,
     pub states: Vec<PurrState<T>>,
     pub frames: Vec<Frame>, // TODO: heatmap
+    pub rxs: Vec<Receiver<PurrState<T>>>,
+    pub txs: Vec<Sender<PurrWorkerCmd<T>>>,
 }
 
 impl<T: PurrShape> Default for PurrModelRunner<T> {
@@ -154,47 +161,81 @@ impl<T: PurrShape> Default for PurrModelRunner<T> {
             thread_number: 4,
             states: Vec::new(),
             frames: Vec::new(),
+            rxs: Vec::new(),
+            txs: Vec::new(),
         }
     }
 }
 
-impl<T: PurrShape> PurrModelRunner<T> {
-    pub fn new(shape_number: u32) -> Self {
+impl<T: 'static + PurrShape> PurrModelRunner<T> {
+    pub fn new(shape_number: u32, thread_number: u32) -> Self {
         PurrModelRunner {
             shape_number,
-            thread_number: 4,
+            thread_number,
             states: Vec::new(),
             frames: Vec::new(),
+            rxs: Vec::new(),
+            txs: Vec::new(),
         }
     }
     pub fn run(&mut self, model: &mut PurrModel<T>, output: &str) {
-        for _ in 0..self.shape_number {
-            // TODO: multi threading
-            // mpsc
-            // let (rx, tx) = mpsc::unbound().unwrap();
-            // threadpool.execute(|| {
-            //  try sync from global
-            //  let result = model.step();
-            //  tx.send();
-            // });
-            // let best_score = max;
-            // for i in 0..self.thread_number {
-            //  let result = rx.recv();
-            //  if result.score < best_score {
-            //      best_score = result.score;
-            //      best_shape = Some(shape);
-            //  }
-            //  merge heatmap
-            // }
-            // draw this frame, update worker threads
-            // let shape = model.best_hill_climb();
-            // self.shapes.append(shape);
-            let state = model.step();
-            model.add_state(&state);
-            self.states.push(state);
-            self.frames
-                .push(Frame::new(model.context.current_img.clone()));
+        let pool = ThreadPool::new(self.thread_number as usize);
+        // spawn workers
+        let worker_model_m = model.m / self.thread_number;
+        for _ in 0..self.thread_number {
+            let (cmd_s, cmd_r) = bounded(1);
+            let (res_s, res_r) = bounded(1);
+            let mut worker_model = model.clone();
+            worker_model.m = worker_model_m;
+            let mut worker = PurrWorker::new(worker_model, cmd_r, res_s);
+            self.txs.push(cmd_s);
+            self.rxs.push(res_r);
+            pool.execute(move || {
+                worker.start();
+            });
         }
+
+        for batch in 0..self.shape_number {
+            // wake all workers
+            for tx in &self.txs {
+                tx.send(PurrWorkerCmd::Start).unwrap();
+            }
+
+            // wait for result
+            let mut best_state = PurrState::default();
+            for rx in &self.rxs {
+                let state = rx.recv().unwrap();
+                if state.score < best_state.score {
+                    best_state = state;
+                }
+            }
+
+            println!(
+                "Batch: {}, score {} -> score {}",
+                batch + 1,
+                model.context.score,
+                best_state.score
+            );
+            // update main thread
+            model.add_state(&best_state);
+            self.states.push(best_state);
+
+            // update worker threads
+            for tx in &self.txs {
+                tx.send(PurrWorkerCmd::Step(best_state)).unwrap();
+            }
+
+            //self.frames
+            //    .push(Frame::new(model.context.current_img.clone()));
+        }
+
+        // stop workers
+        for tx in &self.txs {
+            tx.send(PurrWorkerCmd::End).unwrap();
+        }
+
+        pool.join();
+
         self.dump_img(&model.context.current_img, output);
         //let file_out = OpenOptions::new()
         //    .write(true)

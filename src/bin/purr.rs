@@ -35,8 +35,8 @@ fn main() {
     let input = matches.value_of("input").unwrap();
     let output = matches.value_of("output").unwrap();
     let shape_number = matches.value_of("number").unwrap().parse().unwrap();
-    let mut runner: PurrModelRunner<Triangle> = PurrModelRunner::new(shape_number);
+    let mut runner: PurrModelRunner<Triangle> = PurrModelRunner::new(shape_number, 4);
     let model_ctx = PurrContext::new(input);
-    let mut model = PurrModel::new(model_ctx, 1000, 4, 100);
+    let mut model = PurrModel::new(model_ctx, 1000, 16, 100);
     runner.run(&mut model, output);
 }
