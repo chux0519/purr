@@ -45,7 +45,6 @@ process
 
 ## TODO
 
-- [ ] Multithreading support.
 - [ ] More primitives
 
 
@@ -53,7 +52,6 @@ process
 
 This program is CPU intensive, it does all rendering in memory.
 
-But it still runs very fast on release build, it even might be faster than fogleman's original implementation in single threaded case;
-
+But it still runs very fast on release build, it even might be faster than fogleman's original implementation.
 
 
