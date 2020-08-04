@@ -24,6 +24,7 @@ args:
 - `-i`: input image
 - `-o`: output image
 - `-n`: number of shapes
+- `-t`: optional, number of threads, default to `num_cpus::get()`
 
 ## Example
 
