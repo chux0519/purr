@@ -155,7 +155,8 @@ pub struct PurrModelRunner<T: PurrShape> {
 }
 
 pub trait ModelRunner {
-    fn run(&mut self, model: &mut PurrHillClimbModel, output: &str);
+    type M;
+    fn run(&mut self, model: &mut Self::M, output: &str);
 }
 
 impl<T: PurrShape> Default for PurrModelRunner<T> {
@@ -172,7 +173,8 @@ impl<T: PurrShape> Default for PurrModelRunner<T> {
 }
 
 impl<T: 'static + PurrShape> ModelRunner for PurrModelRunner<T> {
-    fn run(&mut self, model: &mut PurrHillClimbModel, output: &str) {
+    type M = PurrHillClimbModel;
+    fn run(&mut self, model: &mut Self::M, output: &str) {
         let pool = ThreadPool::new(self.thread_number as usize);
         // spawn workers
         let worker_model_m = model.m / self.thread_number;

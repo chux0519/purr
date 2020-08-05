@@ -58,7 +58,7 @@ fn main() {
 
     let model_ctx = PurrContext::new(input);
     let mut model_hillclimb = PurrHillClimbModel::new(model_ctx, 1000, 16, 100);
-    let mut model_runner: Box<dyn ModelRunner> = match shape {
+    let mut model_runner: Box<dyn ModelRunner<M = PurrHillClimbModel>> = match shape {
         "triangle" => Box::new(PurrModelRunner::<Triangle>::new(
             shape_number,
             thread_number,
