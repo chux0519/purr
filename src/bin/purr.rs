@@ -59,12 +59,12 @@ fn main() {
     match shape {
         "triangle" => {
             let mut runner = PurrModelRunner::<Triangle>::new(shape_number, thread_number);
-            let mut model = PurrModel::new(model_ctx, 1000, 16, 100);
+            let mut model = PurrHillClimbModel::new(model_ctx, 1000, 16, 100);
             runner.run(&mut model, output);
         }
         "ellipse" => {
             let mut runner = PurrModelRunner::<Ellipse>::new(shape_number, thread_number);
-            let mut model = PurrModel::new(model_ctx, 1000, 16, 100);
+            let mut model = PurrHillClimbModel::new(model_ctx, 1000, 16, 100);
             runner.run(&mut model, output);
         }
         _ => {

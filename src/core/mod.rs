@@ -114,7 +114,7 @@ impl PurrContext {
 }
 
 #[derive(Clone)]
-pub struct PurrModel<T: PurrShape> {
+pub struct PurrHillClimbModel<T: PurrShape> {
     pub context: PurrContext,
     pub n: u32,
     pub m: u32,
@@ -122,9 +122,9 @@ pub struct PurrModel<T: PurrShape> {
     marker: std::marker::PhantomData<T>,
 }
 
-impl<T: PurrShape> PurrModel<T> {
+impl<T: PurrShape> PurrHillClimbModel<T> {
     pub fn new(context: PurrContext, n: u32, m: u32, age: u32) -> Self {
-        PurrModel {
+        PurrHillClimbModel {
             context,
             n,
             m,
@@ -178,7 +178,7 @@ impl<T: 'static + PurrShape> PurrModelRunner<T> {
             txs: Vec::new(),
         }
     }
-    pub fn run(&mut self, model: &mut PurrModel<T>, output: &str) {
+    pub fn run(&mut self, model: &mut PurrHillClimbModel<T>, output: &str) {
         let pool = ThreadPool::new(self.thread_number as usize);
         // spawn workers
         let worker_model_m = model.m / self.thread_number;
