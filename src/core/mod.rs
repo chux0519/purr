@@ -113,31 +113,31 @@ impl PurrContext {
     }
 }
 
+pub trait PurrModel<T: PurrShape> {
+    fn step(&mut self) -> PurrState<T>;
+    fn add_state(&mut self, state: &PurrState<T>);
+}
+
 #[derive(Clone)]
-pub struct PurrHillClimbModel<T: PurrShape> {
+pub struct PurrHillClimbModel {
     pub context: PurrContext,
     pub n: u32,
     pub m: u32,
     pub age: u32,
-    marker: std::marker::PhantomData<T>,
 }
 
-impl<T: PurrShape> PurrHillClimbModel<T> {
+impl PurrHillClimbModel {
     pub fn new(context: PurrContext, n: u32, m: u32, age: u32) -> Self {
-        PurrHillClimbModel {
-            context,
-            n,
-            m,
-            age,
-            marker: std::marker::PhantomData::default(),
-        }
+        PurrHillClimbModel { context, n, m, age }
     }
+}
 
-    pub fn step(&mut self) -> PurrState<T> {
+impl<T: PurrShape> PurrModel<T> for PurrHillClimbModel {
+    fn step(&mut self) -> PurrState<T> {
         best_hill_climb(&mut self.context, self.n, self.m, self.age)
     }
 
-    pub fn add_state(&mut self, state: &PurrState<T>) {
+    fn add_state(&mut self, state: &PurrState<T>) {
         state
             .shape
             .draw(&mut self.context.current_img, &state.color);
@@ -178,7 +178,7 @@ impl<T: 'static + PurrShape> PurrModelRunner<T> {
             txs: Vec::new(),
         }
     }
-    pub fn run(&mut self, model: &mut PurrHillClimbModel<T>, output: &str) {
+    pub fn run(&mut self, model: &mut PurrHillClimbModel, output: &str) {
         let pool = ThreadPool::new(self.thread_number as usize);
         // spawn workers
         let worker_model_m = model.m / self.thread_number;

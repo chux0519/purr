@@ -1,4 +1,4 @@
-use crate::core::{PurrHillClimbModel, PurrShape, PurrState};
+use crate::core::{PurrHillClimbModel, PurrModel, PurrShape, PurrState};
 use crossbeam_channel::{Receiver, Sender};
 
 pub enum PurrWorkerCmd<T: PurrShape> {
@@ -8,14 +8,14 @@ pub enum PurrWorkerCmd<T: PurrShape> {
 }
 
 pub struct PurrWorker<T: PurrShape> {
-    model: PurrHillClimbModel<T>,
+    model: PurrHillClimbModel,
     rx: Receiver<PurrWorkerCmd<T>>,
     tx: Sender<PurrState<T>>,
 }
 
 impl<T: PurrShape> PurrWorker<T> {
     pub fn new(
-        model: PurrHillClimbModel<T>,
+        model: PurrHillClimbModel,
         rx: Receiver<PurrWorkerCmd<T>>,
         tx: Sender<PurrState<T>>,
     ) -> Self {
