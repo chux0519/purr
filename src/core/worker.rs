@@ -1,22 +1,22 @@
 use crate::core::{PurrHillClimbModel, PurrModel, PurrShape, PurrState};
 use crossbeam_channel::{Receiver, Sender};
 
-pub enum PurrWorkerCmd<T: PurrShape> {
+pub enum PurrWorkerCmd {
     Start,
-    Step(PurrState<T>),
+    UpdateScore(f64),
     End,
 }
 
 pub struct PurrWorker<T: PurrShape> {
     model: PurrHillClimbModel,
-    rx: Receiver<PurrWorkerCmd<T>>,
+    rx: Receiver<PurrWorkerCmd>,
     tx: Sender<PurrState<T>>,
 }
 
 impl<T: PurrShape> PurrWorker<T> {
     pub fn new(
         model: PurrHillClimbModel,
-        rx: Receiver<PurrWorkerCmd<T>>,
+        rx: Receiver<PurrWorkerCmd>,
         tx: Sender<PurrState<T>>,
     ) -> Self {
         PurrWorker { model, rx, tx }
@@ -29,8 +29,8 @@ impl<T: PurrShape> PurrWorker<T> {
                 PurrWorkerCmd::Start => {
                     self.work();
                 }
-                PurrWorkerCmd::Step(_state) => {
-                    self.update(_state);
+                PurrWorkerCmd::UpdateScore(s) => {
+                    self.model.context.score = s;
                 }
                 PurrWorkerCmd::End => {
                     return;
@@ -42,9 +42,5 @@ impl<T: PurrShape> PurrWorker<T> {
     pub fn work(&mut self) {
         let state = self.model.step();
         self.tx.send(state).unwrap();
-    }
-
-    pub fn update(&mut self, state: PurrState<T>) {
-        self.model.add_state(&state);
     }
 }

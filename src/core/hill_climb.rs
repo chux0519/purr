@@ -50,14 +50,12 @@ pub fn hill_climb<T: PurrShape>(
             continue;
         }
         assert!(!lines.is_empty());
-        cur_state.color = compute_color(&ctx.origin_img, &ctx.current_img, &lines, alpha as u8);
-        cur_state.score = diff_partial_with_color(
-            &ctx.origin_img,
-            &ctx.current_img,
-            &lines,
-            ctx.score,
-            cur_state.color,
-        );
+        {
+            let cur = ctx.current_img.read().unwrap();
+            cur_state.color = compute_color(&ctx.origin_img, &cur, &lines, alpha as u8);
+            cur_state.score =
+                diff_partial_with_color(&ctx.origin_img, &cur, &lines, ctx.score, cur_state.color);
+        }
 
         if cur_state.score < best_state.score {
             // find a better state
@@ -90,9 +88,9 @@ pub fn random_step<T: PurrShape>(ctx: &mut PurrContext) -> PurrState<T> {
         return PurrState::default();
     }
     assert!(!lines.is_empty());
-    let color = compute_color(&ctx.origin_img, &ctx.current_img, &lines, 128);
-    let score =
-        diff_partial_with_color(&ctx.origin_img, &ctx.current_img, &lines, ctx.score, color);
+    let cur = ctx.current_img.read().unwrap();
+    let color = compute_color(&ctx.origin_img, &cur, &lines, 128);
+    let score = diff_partial_with_color(&ctx.origin_img, &cur, &lines, ctx.score, color);
 
     PurrState {
         shape: t,
@@ -100,4 +98,3 @@ pub fn random_step<T: PurrShape>(ctx: &mut PurrContext) -> PurrState<T> {
         color,
     }
 }
-

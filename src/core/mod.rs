@@ -18,6 +18,7 @@ use rand::rngs::SmallRng;
 use rand::SeedableRng;
 use std::fs::OpenOptions;
 use std::path::Path;
+use std::sync::{Arc, RwLock};
 use threadpool::ThreadPool;
 
 pub trait PurrShape: Clone + Default + Copy + Shape + Send {}
@@ -43,8 +44,8 @@ impl<T: PurrShape> Default for PurrState<T> {
 pub struct PurrContext {
     pub w: u32,
     pub h: u32,
-    pub origin_img: RgbaImage,
-    pub current_img: RgbaImage,
+    pub origin_img: Arc<RgbaImage>,
+    pub current_img: Arc<RwLock<RgbaImage>>,
     pub rng: SmallRng,
     pub score: f64,
     // TODO: heatmap pos
@@ -105,8 +106,8 @@ impl PurrContext {
         PurrContext {
             w,
             h,
-            origin_img,
-            current_img,
+            origin_img: Arc::new(origin_img),
+            current_img: Arc::new(RwLock::new(current_img)),
             rng: SmallRng::from_entropy(),
             score,
         }
@@ -138,9 +139,8 @@ impl<T: PurrShape> PurrModel<T> for PurrHillClimbModel {
     }
 
     fn add_state(&mut self, state: &PurrState<T>) {
-        state
-            .shape
-            .draw(&mut self.context.current_img, &state.color);
+        let mut cur = self.context.current_img.write().unwrap();
+        state.shape.draw(&mut cur, &state.color);
         self.context.score = state.score;
     }
 }
@@ -151,7 +151,7 @@ pub struct PurrModelRunner<T: PurrShape> {
     pub states: Vec<PurrState<T>>,
     pub frames: Vec<Frame>, // TODO: heatmap
     pub rxs: Vec<Receiver<PurrState<T>>>,
-    pub txs: Vec<Sender<PurrWorkerCmd<T>>>,
+    pub txs: Vec<Sender<PurrWorkerCmd>>,
 }
 
 impl<T: PurrShape> Default for PurrModelRunner<T> {
@@ -222,7 +222,8 @@ impl<T: 'static + PurrShape> PurrModelRunner<T> {
 
             // update worker threads
             for tx in &self.txs {
-                tx.send(PurrWorkerCmd::Step(best_state)).unwrap();
+                tx.send(PurrWorkerCmd::UpdateScore(model.context.score))
+                    .unwrap();
             }
 
             //self.frames
@@ -236,7 +237,10 @@ impl<T: 'static + PurrShape> PurrModelRunner<T> {
 
         pool.join();
 
-        self.dump_img(&model.context.current_img, output);
+        {
+            let res = model.context.current_img.read().unwrap();
+            self.dump_img(&res, output);
+        }
         //let file_out = OpenOptions::new()
         //    .write(true)
         //    .create(true)
@@ -252,4 +256,3 @@ impl<T: 'static + PurrShape> PurrModelRunner<T> {
         img.save(out).unwrap();
     }
 }
-
