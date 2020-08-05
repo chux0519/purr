@@ -25,6 +25,7 @@ args:
 - `-o`: output image
 - `-n`: number of shapes
 - `-t`: optional, number of threads, default to `num_cpus::get()`
+- `-s`: optional, shape, could be `triangle`/`ellipse`, default to `triangle`
 
 ## Example
 
