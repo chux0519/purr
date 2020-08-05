@@ -25,6 +25,38 @@ impl Default for Triangle {
     }
 }
 
+impl Triangle {
+    fn valid(&self) -> bool {
+        let min_degree = 15.0;
+        let mut x1 = (self.b.x - self.a.x) as f64;
+        let mut y1 = (self.b.y - self.a.y) as f64;
+        let mut x2 = (self.c.x - self.a.x) as f64;
+        let mut y2 = (self.c.y - self.a.y) as f64;
+        let mut d1 = (x1 * x1 + y1 * y1).sqrt();
+        let mut d2 = (x2 * x2 + y2 * y2).sqrt();
+        x1 /= d1;
+        y1 /= d1;
+        x2 /= d2;
+        y2 /= d2;
+        let a1 = degrees((x1 * x2 + y1 * y2).acos());
+
+        x1 = (self.a.x - self.b.x) as f64;
+        y1 = (self.a.y - self.b.y) as f64;
+        x2 = (self.c.x - self.b.x) as f64;
+        y2 = (self.c.y - self.b.y) as f64;
+        d1 = (x1 * x1 + y1 * y1).sqrt();
+        d2 = (x2 * x2 + y2 * y2).sqrt();
+        x1 /= d1;
+        y1 /= d1;
+        x2 /= d2;
+        y2 /= d2;
+        let a2 = degrees((x1 * x2 + y1 * y2).acos());
+        let a3 = 180.0 - a1 - a2;
+
+        a1 > min_degree && a2 > min_degree && a3 > min_degree
+    }
+}
+
 impl Shape for Triangle {
     fn draw(&self, img: &mut RgbaImage, color: &Rgba<u8>) {
         let (w, h) = img.dimensions();
@@ -107,35 +139,6 @@ impl Shape for Triangle {
                 break;
             }
         }
-    }
-    fn valid(&self) -> bool {
-        let min_degree = 15.0;
-        let mut x1 = (self.b.x - self.a.x) as f64;
-        let mut y1 = (self.b.y - self.a.y) as f64;
-        let mut x2 = (self.c.x - self.a.x) as f64;
-        let mut y2 = (self.c.y - self.a.y) as f64;
-        let mut d1 = (x1 * x1 + y1 * y1).sqrt();
-        let mut d2 = (x2 * x2 + y2 * y2).sqrt();
-        x1 /= d1;
-        y1 /= d1;
-        x2 /= d2;
-        y2 /= d2;
-        let a1 = degrees((x1 * x2 + y1 * y2).acos());
-
-        x1 = (self.a.x - self.b.x) as f64;
-        y1 = (self.a.y - self.b.y) as f64;
-        x2 = (self.c.x - self.b.x) as f64;
-        y2 = (self.c.y - self.b.y) as f64;
-        d1 = (x1 * x1 + y1 * y1).sqrt();
-        d2 = (x2 * x2 + y2 * y2).sqrt();
-        x1 /= d1;
-        y1 /= d1;
-        x2 /= d2;
-        y2 /= d2;
-        let a2 = degrees((x1 * x2 + y1 * y2).acos());
-        let a3 = 180.0 - a1 - a2;
-
-        a1 > min_degree && a2 > min_degree && a3 > min_degree
     }
 }
 
