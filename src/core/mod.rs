@@ -145,7 +145,7 @@ impl<T: PurrShape> PurrModel<T> for PurrHillClimbModel {
     }
 }
 
-pub struct PurrModelRunner<T: PurrShape> {
+pub struct PurrMultiThreadRunner<T: PurrShape> {
     pub shape_number: u32,
     pub thread_number: u32,
     pub states: Vec<PurrState<T>>,
@@ -154,14 +154,14 @@ pub struct PurrModelRunner<T: PurrShape> {
     pub txs: Vec<Sender<PurrWorkerCmd>>,
 }
 
-pub trait ModelRunner {
+pub trait PurrModelRunner {
     type M;
     fn run(&mut self, model: &mut Self::M, output: &str);
 }
 
-impl<T: PurrShape> Default for PurrModelRunner<T> {
+impl<T: PurrShape> Default for PurrMultiThreadRunner<T> {
     fn default() -> Self {
-        PurrModelRunner {
+        PurrMultiThreadRunner {
             shape_number: 100,
             thread_number: 4,
             states: Vec::new(),
@@ -172,7 +172,7 @@ impl<T: PurrShape> Default for PurrModelRunner<T> {
     }
 }
 
-impl<T: 'static + PurrShape> ModelRunner for PurrModelRunner<T> {
+impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
     type M = PurrHillClimbModel;
     fn run(&mut self, model: &mut Self::M, output: &str) {
         let pool = ThreadPool::new(self.thread_number as usize);
@@ -249,9 +249,9 @@ impl<T: 'static + PurrShape> ModelRunner for PurrModelRunner<T> {
     }
 }
 
-impl<T: 'static + PurrShape> PurrModelRunner<T> {
+impl<T: 'static + PurrShape> PurrMultiThreadRunner<T> {
     pub fn new(shape_number: u32, thread_number: u32) -> Self {
-        PurrModelRunner {
+        PurrMultiThreadRunner {
             shape_number,
             thread_number,
             states: Vec::new(),

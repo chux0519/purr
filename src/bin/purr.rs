@@ -58,12 +58,15 @@ fn main() {
 
     let model_ctx = PurrContext::new(input);
     let mut model_hillclimb = PurrHillClimbModel::new(model_ctx, 1000, 16, 100);
-    let mut model_runner: Box<dyn ModelRunner<M = PurrHillClimbModel>> = match shape {
-        "triangle" => Box::new(PurrModelRunner::<Triangle>::new(
+    let mut model_runner: Box<dyn PurrModelRunner<M = PurrHillClimbModel>> = match shape {
+        "triangle" => Box::new(PurrMultiThreadRunner::<Triangle>::new(
             shape_number,
             thread_number,
         )),
-        "ellipse" => Box::new(PurrModelRunner::<Ellipse>::new(shape_number, thread_number)),
+        "ellipse" => Box::new(PurrMultiThreadRunner::<Ellipse>::new(
+            shape_number,
+            thread_number,
+        )),
         _ => {
             eprintln!("unsupported shape {}", shape);
             unreachable!()
