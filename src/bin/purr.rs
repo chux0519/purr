@@ -55,21 +55,19 @@ fn main() {
         .unwrap_or(&num_cpus::get().to_string())
         .parse()
         .unwrap();
+
     let model_ctx = PurrContext::new(input);
-    match shape {
-        "triangle" => {
-            let mut runner = PurrModelRunner::<Triangle>::new(shape_number, thread_number);
-            let mut model = PurrHillClimbModel::new(model_ctx, 1000, 16, 100);
-            runner.run(&mut model, output);
-        }
-        "ellipse" => {
-            let mut runner = PurrModelRunner::<Ellipse>::new(shape_number, thread_number);
-            let mut model = PurrHillClimbModel::new(model_ctx, 1000, 16, 100);
-            runner.run(&mut model, output);
-        }
+    let mut model_hillclimb = PurrHillClimbModel::new(model_ctx, 1000, 16, 100);
+    let mut model_runner: Box<dyn ModelRunner> = match shape {
+        "triangle" => Box::new(PurrModelRunner::<Triangle>::new(
+            shape_number,
+            thread_number,
+        )),
+        "ellipse" => Box::new(PurrModelRunner::<Ellipse>::new(shape_number, thread_number)),
         _ => {
             eprintln!("unsupported shape {}", shape);
-            return;
+            unreachable!()
         }
     };
+    model_runner.run(&mut model_hillclimb, output);
 }

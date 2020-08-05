@@ -154,6 +154,10 @@ pub struct PurrModelRunner<T: PurrShape> {
     pub txs: Vec<Sender<PurrWorkerCmd>>,
 }
 
+pub trait ModelRunner {
+    fn run(&mut self, model: &mut PurrHillClimbModel, output: &str);
+}
+
 impl<T: PurrShape> Default for PurrModelRunner<T> {
     fn default() -> Self {
         PurrModelRunner {
@@ -167,18 +171,8 @@ impl<T: PurrShape> Default for PurrModelRunner<T> {
     }
 }
 
-impl<T: 'static + PurrShape> PurrModelRunner<T> {
-    pub fn new(shape_number: u32, thread_number: u32) -> Self {
-        PurrModelRunner {
-            shape_number,
-            thread_number,
-            states: Vec::new(),
-            frames: Vec::new(),
-            rxs: Vec::new(),
-            txs: Vec::new(),
-        }
-    }
-    pub fn run(&mut self, model: &mut PurrHillClimbModel, output: &str) {
+impl<T: 'static + PurrShape> ModelRunner for PurrModelRunner<T> {
+    fn run(&mut self, model: &mut PurrHillClimbModel, output: &str) {
         let pool = ThreadPool::new(self.thread_number as usize);
         // spawn workers
         let worker_model_m = model.m / self.thread_number;
@@ -239,7 +233,7 @@ impl<T: 'static + PurrShape> PurrModelRunner<T> {
 
         {
             let res = model.context.current_img.read().unwrap();
-            self.dump_img(&res, output);
+            dump_img(&res, output);
         }
         //let file_out = OpenOptions::new()
         //    .write(true)
@@ -251,8 +245,21 @@ impl<T: 'static + PurrShape> PurrModelRunner<T> {
         //    .encode_frames(self.frames.clone().into_iter())
         //    .unwrap();
     }
+}
 
-    pub fn dump_img(&self, img: &RgbaImage, out: &str) {
-        img.save(out).unwrap();
+impl<T: 'static + PurrShape> PurrModelRunner<T> {
+    pub fn new(shape_number: u32, thread_number: u32) -> Self {
+        PurrModelRunner {
+            shape_number,
+            thread_number,
+            states: Vec::new(),
+            frames: Vec::new(),
+            rxs: Vec::new(),
+            txs: Vec::new(),
+        }
     }
+}
+
+pub fn dump_img(img: &RgbaImage, out: &str) {
+    img.save(out).unwrap();
 }
