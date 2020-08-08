@@ -22,7 +22,7 @@ Simple rules
 args:
 
 - `-i`: input image
-- `-o`: output image
+- `-o`: output image, supported extensions: `.png|.gif|.svg`
 - `-n`: number of shapes
 - `-t`: optional, number of threads, default to `num_cpus::get()`
 - `-s`: optional, shape, could be `triangle`/`ellipse`, default to `triangle`
@@ -31,19 +31,19 @@ args:
 
 using
 
-> -i ./assets/input.png -o ./output.png -n 100
+> -i ./assets/input.png -o ./output.png -n 150
 
 input image
 
-![input.png](./assets/input.png){:height="50%" width="50%"}
+<img src="https://imgur.com/MBdy5aM.png" width="300" />
 
 output image
 
-![output.png](./assets/output.gif.png){:height="50%" width="50%"}
+<img src="https://imgur.com/QTCWJQt.png" width="300" />
 
 process
 
-![out.gif](./assets/output.gif){:height="50%" width="50%"}
+<img src="https://imgur.com/jMQyhYJ.gif" width="300" />
 
 ## TODO
 
@@ -55,5 +55,4 @@ process
 This program is CPU intensive, it does all rendering in memory.
 
 But it still runs very fast on release build, it even might be faster than fogleman's original implementation.
-
 
