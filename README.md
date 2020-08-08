@@ -35,15 +35,15 @@ using
 
 input image
 
-![input.png](./assets/input.png)
+![input.png](./assets/input.png){:height="50%" width="50%"}
 
 output image
 
-![output.png](./assets/output.png)
+![output.png](./assets/output.gif.png){:height="50%" width="50%"}
 
 process
 
-![out.gif](./assets/out.gif)
+![out.gif](./assets/output.gif){:height="50%" width="50%"}
 
 ## TODO
 
