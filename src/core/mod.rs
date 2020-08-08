@@ -16,7 +16,9 @@ use image::Frame;
 use image::GenericImageView;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
+use std::ffi::OsStr;
 use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 use threadpool::ThreadPool;
@@ -235,9 +237,29 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
 
         pool.join();
 
+        // save result
+
         {
             let res = model.context.current_img.read().unwrap();
-            dump_img(&res, output);
+            let suffix = Path::new(output)
+                .extension()
+                .and_then(OsStr::to_str)
+                .unwrap_or("png");
+            match suffix {
+                "svg" => {
+                    let mut out = OpenOptions::new()
+                        .write(true)
+                        .create(true)
+                        .open(output)
+                        .unwrap();
+                    out.write_all(self.to_svg(&model.context).as_bytes())
+                        .unwrap();
+                }
+                "gif" => {}
+                _ => {
+                    dump_img(&res, output);
+                }
+            }
         }
         // println!("{}", self.to_svg(&model.context));
         //let file_out = OpenOptions::new()
