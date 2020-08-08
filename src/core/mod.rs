@@ -10,9 +10,8 @@ use crate::graphics::*;
 use crate::{Rgba, RgbaImage};
 use crossbeam_channel::bounded;
 use crossbeam_channel::{Receiver, Sender};
-use image::gif::Encoder;
+use gif::{Encoder, Frame, Repeat, SetParameter};
 use image::imageops::FilterType;
-use image::Frame;
 use image::GenericImageView;
 use nsvg;
 use rand::rngs::SmallRng;
@@ -153,7 +152,6 @@ pub struct PurrMultiThreadRunner<T: PurrShape> {
     pub shape_number: u32,
     pub thread_number: u32,
     pub states: Vec<PurrState<T>>,
-    pub frames: Vec<Frame>, // TODO: heatmap
     pub rxs: Vec<Receiver<PurrState<T>>>,
     pub txs: Vec<Sender<PurrWorkerCmd>>,
 }
@@ -162,6 +160,7 @@ pub trait PurrModelRunner {
     type M;
     fn run(&mut self, model: &mut Self::M, output: &str);
     fn to_svg(&self, context: &PurrContext) -> String;
+    fn to_frames(&self, context: &PurrContext) -> Vec<String>;
 }
 
 impl<T: PurrShape> Default for PurrMultiThreadRunner<T> {
@@ -170,7 +169,6 @@ impl<T: PurrShape> Default for PurrMultiThreadRunner<T> {
             shape_number: 100,
             thread_number: 4,
             states: Vec::new(),
-            frames: Vec::new(),
             rxs: Vec::new(),
             txs: Vec::new(),
         }
@@ -226,9 +224,6 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                 tx.send(PurrWorkerCmd::UpdateScore(model.context.score))
                     .unwrap();
             }
-
-            //self.frames
-            //    .push(Frame::new(model.context.current_img.clone()));
         }
 
         // stop workers
@@ -238,8 +233,9 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
 
         pool.join();
 
-        // save result
+        println!("jobs done, now export to {}", output);
 
+        // save result
         {
             let suffix = Path::new(output)
                 .extension()
@@ -255,28 +251,43 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                     out.write_all(self.to_svg(&model.context).as_bytes())
                         .unwrap();
                 }
-                "gif" => {}
+                "gif" => {
+                    let out = OpenOptions::new()
+                        .write(true)
+                        .create(true)
+                        .open(output)
+                        .unwrap();
+                    let frames = self.to_frames(&model.context);
+                    let mut encoder =
+                        Encoder::new(out, model.context.w as u16, model.context.h as u16, &[0; 0])
+                            .unwrap();
+                    encoder.set(Repeat::Infinite).unwrap();
+
+                    for (i, frame_str) in frames.iter().enumerate() {
+                        println!("exporting {} frame", i + 1);
+                        let svg = nsvg::parse_str(frame_str, nsvg::Units::Pixel, 96.0).unwrap();
+                        let scale = 2.0;
+                        let (width, height, mut raw) = svg.rasterize_to_raw_rgba(scale).unwrap();
+                        // let img = image::RgbaImage::from_raw(width, height, raw).unwrap();
+                        let frame = Frame::from_rgba(width as u16, height as u16, &mut raw);
+                        encoder.write_frame(&frame).unwrap();
+                    }
+                    // save final result then
+                    let svg_str = self.to_svg(&model.context);
+                    let img = rasterize_svg(&svg_str);
+                    let final_res = format!("{}.png", output);
+                    img.save(&final_res).unwrap();
+                    println!("final result saved to {}", final_res);
+                }
                 _ => {
                     // generate svg, then rasterize it
                     // for anti-aliasing
                     let svg_str = self.to_svg(&model.context);
-                    let svg = nsvg::parse_str(&svg_str, nsvg::Units::Pixel, 96.0).unwrap();
-                    let scale = 2.0;
-                    let image = svg.rasterize(scale).unwrap();
-                    image.save(output).unwrap();
+                    let img = rasterize_svg(&svg_str);
+                    img.save(output).unwrap();
                 }
             }
         }
-        // println!("{}", self.to_svg(&model.context));
-        //let file_out = OpenOptions::new()
-        //    .write(true)
-        //    .create(true)
-        //    .open("out.gif")
-        //    .unwrap();
-        //let mut encoder = Encoder::new(file_out);
-        //encoder
-        //    .encode_frames(self.frames.clone().into_iter())
-        //    .unwrap();
     }
 
     fn to_svg(&self, context: &PurrContext) -> String {
@@ -306,6 +317,37 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
         output += "</svg>";
         output
     }
+
+    fn to_frames(&self, context: &PurrContext) -> Vec<String> {
+        let mut frames = Vec::new();
+        let mut head = format!(
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"{}\" height=\"{}\">",
+            context.w, context.h
+        );
+        head += &format!(
+            "<rect x=\"0\" y=\"0\" width=\"{}\" height=\"{}\" fill=\"#{:02X}{:02X}{:02X}\"/>",
+            context.w, context.h, context.bg.0[0], context.bg.0[1], context.bg.0[2]
+        );
+        head += "<g transform=\"scale(1) translate(0.5 0.5)\">";
+        let tail = "</g></svg>";
+        for n in 0..self.shape_number {
+            let mut frame = head.clone();
+            for i in 0..n {
+                let s = &self.states[i as usize];
+                let attr = format!(
+                    "fill=\"#{:02X}{:02X}{:02X}\" fill-opacity=\"{}\"",
+                    s.color.0[0],
+                    s.color.0[1],
+                    s.color.0[2],
+                    s.color.0[3] as f64 / 255.0
+                );
+                frame += &s.shape.to_svg(&attr);
+            }
+            frame += tail;
+            frames.push(frame);
+        }
+        frames
+    }
 }
 
 impl<T: 'static + PurrShape> PurrMultiThreadRunner<T> {
@@ -314,10 +356,15 @@ impl<T: 'static + PurrShape> PurrMultiThreadRunner<T> {
             shape_number,
             thread_number,
             states: Vec::new(),
-            frames: Vec::new(),
             rxs: Vec::new(),
             txs: Vec::new(),
         }
     }
 }
 
+pub fn rasterize_svg(svg_str: &str) -> RgbaImage {
+    let svg = nsvg::parse_str(&svg_str, nsvg::Units::Pixel, 96.0).unwrap();
+    let scale = 2.0;
+    let (width, height, raw) = svg.rasterize_to_raw_rgba(scale).unwrap();
+    image::RgbaImage::from_raw(width, height, raw).unwrap()
+}
