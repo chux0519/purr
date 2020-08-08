@@ -88,6 +88,13 @@ impl Shape for Ellipse {
             line.draw(img, &color);
         }
     }
+
+    fn to_svg(&self, attr: &str) -> String {
+        format!(
+            "<ellipse {} cx=\"{}\" cy=\"{}\" rx=\"{}\" ry=\"{}\" />",
+            attr, self.o.x, self.o.y, self.rx, self.ry
+        )
+    }
 }
 
 // bresenham

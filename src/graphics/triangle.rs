@@ -66,7 +66,8 @@ impl Shape for Triangle {
         }
     }
     fn rasterize(&self, w: u32, h: u32) -> Vec<Scanline> {
-        let lines = triangle(self.a, self.b, self.c);
+        let points = vec![self.a, self.b, self.c];
+        let lines = scan_polygon(&points, w, h);
         let mut visible_lines: Vec<Scanline> = lines
             .into_iter()
             .filter(|l| l.x1 <= l.x2 && l.x2 > 0 && l.x1 < w && l.y > 0 && l.y < h)
@@ -140,64 +141,13 @@ impl Shape for Triangle {
             }
         }
     }
-}
 
-// old-school way: line sweeping
-pub fn triangle(p0: Point, p1: Point, p2: Point) -> Vec<Scanline> {
-    let mut lines = Vec::new();
-    let mut p0 = p0;
-    let mut p1 = p1;
-    let mut p2 = p2;
-    // sort by y axis, bubble sort
-    if p1.y < p0.y {
-        std::mem::swap(&mut p0, &mut p1);
+    fn to_svg(&self, attr: &str) -> String {
+        format!(
+            "<polygon {} points=\"{},{} {},{} {},{}\" />",
+            attr, self.a.x, self.a.y, self.b.x, self.b.y, self.c.x, self.c.y,
+        )
     }
-    // p0 is the smaller one of left two elements
-    // if p2 is samller than p0, then p2 is the samllest one
-    if p2.y < p0.y {
-        std::mem::swap(&mut p2, &mut p0);
-    }
-    // then we just reorder remains
-    if p2.y < p1.y {
-        std::mem::swap(&mut p2, &mut p1);
-    }
-    assert_eq!(p0.y <= p1.y && p1.y <= p2.y, true);
-    // scan the upper triangle
-    let total_height = p2.y - p0.y;
-    // upper triangle
-    for y in p0.y..p1.y {
-        let segment_height = p1.y - p0.y + 1;
-        let alpha = (y - p0.y) as f64 / total_height as f64;
-        let beta = (y - p0.y) as f64 / segment_height as f64;
-        let mut a = p0 + (p2 - p0).mul(alpha);
-        let mut b = p0 + (p1 - p0).mul(beta);
-        if a.x > b.x {
-            std::mem::swap(&mut a, &mut b);
-        }
-        lines.push(Scanline {
-            y: y as u32,
-            x1: a.x as u32,
-            x2: b.x as u32,
-        });
-    }
-    // lower triangle
-    for y in p1.y..=p2.y {
-        let segment_height = p2.y - p1.y + 1;
-        let alpha = (y - p0.y) as f64 / total_height as f64;
-        let beta = (y - p1.y) as f64 / segment_height as f64;
-        let mut a = p0 + (p2 - p0).mul(alpha);
-        let mut b = p1 + (p2 - p1).mul(beta);
-        if a.x > b.x {
-            std::mem::swap(&mut a, &mut b);
-        }
-        lines.push(Scanline {
-            y: y as u32,
-            x1: a.x as u32,
-            x2: b.x as u32,
-        });
-    }
-
-    lines
 }
 
 impl PurrShape for Triangle {}

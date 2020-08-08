@@ -16,4 +16,5 @@ pub trait Shape {
     fn random(w: u32, h: u32, rng: &mut SmallRng) -> Self;
     fn mutate(&mut self, w: u32, h: u32, rng: &mut SmallRng);
     fn draw(&self, img: &mut RgbaImage, color: &Rgba<u8>);
+    fn to_svg(&self, attr: &str) -> String;
 }

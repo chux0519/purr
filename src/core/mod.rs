@@ -48,7 +48,7 @@ pub struct PurrContext {
     pub current_img: Arc<RwLock<RgbaImage>>,
     pub rng: SmallRng,
     pub score: f64,
-    // TODO: heatmap pos
+    pub bg: Rgba<u8>, // TODO: heatmap pos
 }
 
 impl PurrContext {
@@ -110,6 +110,7 @@ impl PurrContext {
             current_img: Arc::new(RwLock::new(current_img)),
             rng: SmallRng::from_entropy(),
             score,
+            bg: color,
         }
     }
 }
@@ -157,6 +158,7 @@ pub struct PurrMultiThreadRunner<T: PurrShape> {
 pub trait PurrModelRunner {
     type M;
     fn run(&mut self, model: &mut Self::M, output: &str);
+    fn to_svg(&self, context: &PurrContext) -> String;
 }
 
 impl<T: PurrShape> Default for PurrMultiThreadRunner<T> {
@@ -237,6 +239,7 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
             let res = model.context.current_img.read().unwrap();
             dump_img(&res, output);
         }
+        // println!("{}", self.to_svg(&model.context));
         //let file_out = OpenOptions::new()
         //    .write(true)
         //    .create(true)
@@ -246,6 +249,34 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
         //encoder
         //    .encode_frames(self.frames.clone().into_iter())
         //    .unwrap();
+    }
+
+    fn to_svg(&self, context: &PurrContext) -> String {
+        let mut output = "".to_owned();
+        output += &format!(
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"{}\" height=\"{}\">",
+            context.w, context.h
+        );
+        output += &format!(
+            "<rect x=\"0\" y=\"0\" width=\"{}\" height=\"{}\" fill=\"#{:02X}{:02X}{:02X}\"/>",
+            context.w, context.h, context.bg.0[0], context.bg.0[1], context.bg.0[2]
+        );
+        output += "<g transform=\"scale(1) translate(0.5 0.5)\">";
+
+        for s in &self.states {
+            let attr = format!(
+                "fill=\"#{:02X}{:02X}{:02X}\" fill-opacity=\"{}\"",
+                s.color.0[0],
+                s.color.0[1],
+                s.color.0[2],
+                s.color.0[3] as f64 / 255.0
+            );
+            output += &s.shape.to_svg(&attr);
+        }
+
+        output += "</g>";
+        output += "</svg>";
+        output
     }
 }
 
