@@ -1,11 +1,13 @@
 mod ellipse;
 mod point;
+mod rectangle;
 mod scanline;
 mod triangle;
 
 use crate::{Rgba, RgbaImage};
 pub use ellipse::*;
 pub use point::*;
+pub use rectangle::*;
 pub use scanline::*;
 pub use triangle::*;
 
