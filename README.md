@@ -1,49 +1,43 @@
-# Rusty Days Hackathon
+# Purr
+
+It's a rust implementation of fogleman's [primitive](https://github.com/fogleman/primitive).
+
+Created at Rusty Days Hackathon, 2020.
 
 > The topic is "Emergent phenomena"("Amaze us with simple rules").
 
-Purr using some combination of primitives(triangles in this project), to fit pictures.
+By randomly generating primitive(triangle/ellipse/etc.), to fit a given picture.
 
-The rule is really simple, like hill climbing, we randomly genrate some triangles, then try to find the shortest path to the target image.
+The rule is really simple, like hill climbing, we randomly genrate some primitives, then try to find the shortest path to the target image.
 
-It's a rust implementation of fogleman's [primitive](https://github.com/fogleman/primitive)
-
+For more details about the algorithm, check this out: [Hill Climbing](https://en.wikipedia.org/wiki/Hill_climbing)
 
 ## Feature
 
-Simple rules
+Simple rule, powerful result
 
 ### Usage
 
-> cargo build --release
-> 
-> ./target/release/purr -i ./assets/input.png -o ./output.png -n 100
+> cargo run --release --features=cli --bin=purr  --  -i ./assets/input.png -o output.gif -n 150
 
 args:
 
 - `-i`: input image
 - `-o`: output image, supported extensions: `.png|.gif|.svg`
 - `-n`: number of shapes
-- `-t`: optional, number of threads, default to `num_cpus::get()`
 - `-s`: optional, shape, could be `triangle`/`ellipse`, default to `triangle`
+- `-t`: optional, number of threads, default to `num_cpus::get()`
 
 ## Example
 
 using
 
-> -i ./assets/input.png -o ./output.png -n 150
+> -i ./assets/input.png -o output.png -n 150
 
-input image
+| input image | output image | process |
+| --- | --- | --- |
+| <img src="assets/input.png" width="1024"/> | <img src="assets/output.gif.png" /> | <img src="assets/output.gif" /> |
 
-<img src="https://imgur.com/MBdy5aM.png" width="300" />
-
-output image
-
-<img src="https://imgur.com/QTCWJQt.png" width="300" />
-
-process
-
-<img src="https://imgur.com/jMQyhYJ.gif" width="300" />
 
 ## TODO
 
@@ -54,5 +48,4 @@ process
 
 This program is CPU intensive, it does all rendering in memory.
 
-But it still runs very fast on release build, it even might be faster than fogleman's original implementation.
-
+But it still runs very fast on release build.
