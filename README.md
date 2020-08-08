@@ -34,9 +34,10 @@ using
 
 > -i ./assets/input.png -o output.png -n 150
 
-| input image | output image | process |
-| --- | --- | --- |
-| <img src="assets/input.png" width="1024"/> | <img src="assets/output.gif.png" /> | <img src="assets/output.gif" /> |
+| primitive | input image | output image | process |
+| --- | --- | --- | --- |
+| triangle | <img src="assets/input.png" width="1024"/> | <img src="https://i.imgur.com/QTCWJQt.png" /> | <img src="https://i.imgur.com/jMQyhYJ.gif" /> |
+| ellipse | <img src="assets/input.png" width="1024"/> | <img src="https://i.imgur.com/xuWuvs0.png" /> | <img src="https://i.imgur.com/5e4Q8J0.gif" /> |
 
 
 ## TODO
