@@ -14,6 +14,7 @@ use image::gif::Encoder;
 use image::imageops::FilterType;
 use image::Frame;
 use image::GenericImageView;
+use nsvg;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 use std::ffi::OsStr;
@@ -240,7 +241,6 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
         // save result
 
         {
-            let res = model.context.current_img.read().unwrap();
             let suffix = Path::new(output)
                 .extension()
                 .and_then(OsStr::to_str)
@@ -257,7 +257,13 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                 }
                 "gif" => {}
                 _ => {
-                    dump_img(&res, output);
+                    // generate svg, then rasterize it
+                    // for anti-aliasing
+                    let svg_str = self.to_svg(&model.context);
+                    let svg = nsvg::parse_str(&svg_str, nsvg::Units::Pixel, 96.0).unwrap();
+                    let scale = 2.0;
+                    let image = svg.rasterize(scale).unwrap();
+                    image.save(output).unwrap();
                 }
             }
         }
@@ -315,6 +321,3 @@ impl<T: 'static + PurrShape> PurrMultiThreadRunner<T> {
     }
 }
 
-pub fn dump_img(img: &RgbaImage, out: &str) {
-    img.save(out).unwrap();
-}
