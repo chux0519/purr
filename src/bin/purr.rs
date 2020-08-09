@@ -79,6 +79,10 @@ fn main() {
             shape_number,
             thread_number,
         )),
+        "combo" => Box::new(PurrMultiThreadRunner::<Combo>::new(
+            shape_number,
+            thread_number,
+        )),
         _ => {
             eprintln!("unsupported shape {}", shape);
             unreachable!()

@@ -1,4 +1,5 @@
 mod circle;
+mod combo;
 mod ellipse;
 mod point;
 mod rectangle;
@@ -7,6 +8,7 @@ mod triangle;
 
 use crate::{Rgba, RgbaImage};
 pub use circle::*;
+pub use combo::*;
 pub use ellipse::*;
 pub use point::*;
 pub use rectangle::*;
