@@ -75,6 +75,10 @@ fn main() {
             shape_number,
             thread_number,
         )),
+        "circle" => Box::new(PurrMultiThreadRunner::<Circle>::new(
+            shape_number,
+            thread_number,
+        )),
         _ => {
             eprintln!("unsupported shape {}", shape);
             unreachable!()

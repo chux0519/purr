@@ -25,6 +25,37 @@ impl Default for Ellipse {
     }
 }
 
+impl Ellipse {
+    pub fn mutate_o(&mut self, w: u32, h: u32, rng: &mut SmallRng) {
+        self.o.x = clamp(
+            self.o.x + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
+            0,
+            w as i32 - 1,
+        );
+        self.o.y = clamp(
+            self.o.y + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
+            0,
+            h as i32 - 1,
+        );
+    }
+
+    pub fn mutate_rx(&mut self, w: u32, rng: &mut SmallRng) {
+        self.rx = clamp(
+            self.rx + (16.0 * rng.sample::<f64, _>(StandardNormal)) as u32,
+            1,
+            w - 1,
+        );
+    }
+
+    pub fn mutate_ry(&mut self, h: u32, rng: &mut SmallRng) {
+        self.ry = clamp(
+            self.ry + (16.0 * rng.sample::<f64, _>(StandardNormal)) as u32,
+            1,
+            h - 1,
+        );
+    }
+}
+
 impl Shape for Ellipse {
     fn random(w: u32, h: u32, rng: &mut SmallRng) -> Self {
         let x = rng.gen_range(0, w as i32);
@@ -41,30 +72,13 @@ impl Shape for Ellipse {
     fn mutate(&mut self, w: u32, h: u32, rng: &mut SmallRng) {
         match rng.gen_range(0, 3) {
             0 => {
-                self.o.x = clamp(
-                    self.o.x + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
-                    0,
-                    w as i32 - 1,
-                );
-                self.o.y = clamp(
-                    self.o.y + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
-                    0,
-                    h as i32 - 1,
-                );
+                self.mutate_o(w, h, rng);
             }
             1 => {
-                self.rx = clamp(
-                    self.rx + (16.0 * rng.sample::<f64, _>(StandardNormal)) as u32,
-                    1,
-                    w - 1,
-                );
+                self.mutate_rx(w, rng);
             }
             2 => {
-                self.ry = clamp(
-                    self.ry + (16.0 * rng.sample::<f64, _>(StandardNormal)) as u32,
-                    1,
-                    h - 1,
-                );
+                self.mutate_ry(h, rng);
             }
             _ => unreachable!(),
         }
