@@ -46,6 +46,7 @@ impl<T: PurrShape> Default for PurrState<T> {
 pub struct PurrContext {
     pub w: u32,
     pub h: u32,
+    pub scale: f32,
     pub origin_img: Arc<RgbaImage>,
     pub current_img: Arc<RwLock<RgbaImage>>,
     pub rng: SmallRng,
@@ -54,15 +55,14 @@ pub struct PurrContext {
 }
 
 impl PurrContext {
-    pub fn new<P: AsRef<Path>>(input: P) -> Self {
+    pub fn new<P: AsRef<Path>>(input: P, input_size: u32, output_size: u32) -> Self {
         let img = image::open(&input).unwrap();
         let (width, height) = img.dimensions();
-        let mut w = 0;
-        let mut h = 0;
-        let max_len = 600;
-        let origin_img = if width > height && width > max_len {
-            // scale down to max_len
-            w = max_len;
+        let mut w;
+        let mut h;
+        let origin_img = if width >= height && width > input_size {
+            // scale down to max_size
+            w = input_size;
             h = (height as f64 / width as f64 * w as f64) as u32;
             let scaled = img.resize(w, h, FilterType::Triangle);
             let img_rgba = scaled.into_rgba();
@@ -74,8 +74,8 @@ impl PurrContext {
                 width, height, w, h
             );
             img_rgba
-        } else if height > width && height > max_len {
-            h = max_len;
+        } else if height > width && height > input_size {
+            h = input_size;
             w = (width as f64 / height as f64 * h as f64) as u32;
             let scaled = img.resize(w, h, FilterType::Triangle);
             let img_rgba = scaled.into_rgba();
@@ -104,10 +104,12 @@ impl PurrContext {
         }
 
         let score = diff_full(&origin_img, &current_img);
+        let scale = output_size as f32 / input_size as f32;
 
         PurrContext {
             w,
             h,
+            scale,
             origin_img: Arc::new(origin_img),
             current_img: Arc::new(RwLock::new(current_img)),
             rng: SmallRng::from_entropy(),
@@ -274,7 +276,7 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                     }
                     // save final result then
                     let svg_str = self.to_svg(&model.context);
-                    let img = rasterize_svg(&svg_str);
+                    let img = rasterize_svg(&svg_str, model.context.scale);
                     let final_res = format!("{}.png", output);
                     img.save(&final_res).unwrap();
                     println!("final result saved to {}", final_res);
@@ -283,7 +285,7 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                     // generate svg, then rasterize it
                     // for anti-aliasing
                     let svg_str = self.to_svg(&model.context);
-                    let img = rasterize_svg(&svg_str);
+                    let img = rasterize_svg(&svg_str, model.context.scale);
                     img.save(output).unwrap();
                 }
             }
@@ -362,9 +364,8 @@ impl<T: 'static + PurrShape> PurrMultiThreadRunner<T> {
     }
 }
 
-pub fn rasterize_svg(svg_str: &str) -> RgbaImage {
+pub fn rasterize_svg(svg_str: &str, scale: f32) -> RgbaImage {
     let svg = nsvg::parse_str(&svg_str, nsvg::Units::Pixel, 96.0).unwrap();
-    let scale = 2.0;
     let (width, height, raw) = svg.rasterize_to_raw_rgba(scale).unwrap();
     image::RgbaImage::from_raw(width, height, raw).unwrap()
 }
