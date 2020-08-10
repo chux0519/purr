@@ -4,8 +4,7 @@ use crate::graphics::point::*;
 use crate::graphics::scanline::*;
 use crate::graphics::Shape;
 use crate::{Rgba, RgbaImage};
-use rand::rngs::SmallRng;
-use rand::Rng;
+use rand::{Rng, RngCore, SeedableRng};
 use rand_distr::StandardNormal;
 
 #[derive(Debug, Clone, Copy)]
@@ -26,7 +25,7 @@ impl Default for Ellipse {
 }
 
 impl Ellipse {
-    pub fn mutate_o(&mut self, w: u32, h: u32, rng: &mut SmallRng) {
+    pub fn mutate_o<T: SeedableRng + RngCore>(&mut self, w: u32, h: u32, rng: &mut T) {
         self.o.x = clamp(
             self.o.x + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
             0,
@@ -39,7 +38,7 @@ impl Ellipse {
         );
     }
 
-    pub fn mutate_rx(&mut self, w: u32, rng: &mut SmallRng) {
+    pub fn mutate_rx<T: SeedableRng + RngCore>(&mut self, w: u32, rng: &mut T) {
         self.rx = clamp(
             self.rx + (16.0 * rng.sample::<f64, _>(StandardNormal)) as u32,
             1,
@@ -47,7 +46,7 @@ impl Ellipse {
         );
     }
 
-    pub fn mutate_ry(&mut self, h: u32, rng: &mut SmallRng) {
+    pub fn mutate_ry<T: SeedableRng + RngCore>(&mut self, h: u32, rng: &mut T) {
         self.ry = clamp(
             self.ry + (16.0 * rng.sample::<f64, _>(StandardNormal)) as u32,
             1,
@@ -57,7 +56,7 @@ impl Ellipse {
 }
 
 impl Shape for Ellipse {
-    fn random(w: u32, h: u32, rng: &mut SmallRng) -> Self {
+    fn random<T: SeedableRng + RngCore>(w: u32, h: u32, rng: &mut T) -> Self {
         let x = rng.gen_range(0, w as i32);
         let y = rng.gen_range(0, h as i32);
         let rx = rng.gen_range(0, 32) + 1;
@@ -69,7 +68,7 @@ impl Shape for Ellipse {
             ry,
         }
     }
-    fn mutate(&mut self, w: u32, h: u32, rng: &mut SmallRng) {
+    fn mutate<T: SeedableRng + RngCore>(&mut self, w: u32, h: u32, rng: &mut T) {
         match rng.gen_range(0, 3) {
             0 => {
                 self.mutate_o(w, h, rng);

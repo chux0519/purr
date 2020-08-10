@@ -1,8 +1,7 @@
 use crate::core::PurrShape;
 use crate::graphics::{Ellipse, Point, Scanline, Shape};
 use crate::{Rgba, RgbaImage};
-use rand::rngs::SmallRng;
-use rand::Rng;
+use rand::{Rng, RngCore, SeedableRng};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Circle(Ellipse);
@@ -14,7 +13,7 @@ impl Default for Circle {
 }
 
 impl Shape for Circle {
-    fn random(w: u32, h: u32, rng: &mut SmallRng) -> Self {
+    fn random<T: SeedableRng + RngCore>(w: u32, h: u32, rng: &mut T) -> Self {
         let x = rng.gen_range(0, w as i32);
         let y = rng.gen_range(0, h as i32);
         let r = rng.gen_range(0, 32) + 1;
@@ -26,7 +25,7 @@ impl Shape for Circle {
         })
     }
 
-    fn mutate(&mut self, w: u32, h: u32, rng: &mut SmallRng) {
+    fn mutate<T: SeedableRng + RngCore>(&mut self, w: u32, h: u32, rng: &mut T) {
         match rng.gen_range(0, 2) {
             0 => {
                 self.0.mutate_o(w, h, rng);
@@ -55,4 +54,3 @@ impl Shape for Circle {
 }
 
 impl PurrShape for Circle {}
-

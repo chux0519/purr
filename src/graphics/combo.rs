@@ -1,8 +1,7 @@
 use crate::core::PurrShape;
 use crate::graphics::{Circle, Ellipse, Rectangle, RotatedRectangle, Scanline, Shape, Triangle};
 use crate::{Rgba, RgbaImage};
-use rand::rngs::SmallRng;
-use rand::Rng;
+use rand::{Rng, RngCore, SeedableRng};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Combo {
@@ -20,7 +19,7 @@ impl Default for Combo {
 }
 
 impl Shape for Combo {
-    fn random(w: u32, h: u32, rng: &mut SmallRng) -> Self {
+    fn random<T: SeedableRng + RngCore>(w: u32, h: u32, rng: &mut T) -> Self {
         match rng.gen_range(0, 5) {
             0 => Combo::Triangle(Triangle::random(w, h, rng)),
             1 => Combo::Ellipse(Ellipse::random(w, h, rng)),
@@ -31,7 +30,7 @@ impl Shape for Combo {
         }
     }
 
-    fn mutate(&mut self, w: u32, h: u32, rng: &mut SmallRng) {
+    fn mutate<T: SeedableRng + RngCore>(&mut self, w: u32, h: u32, rng: &mut T) {
         match self {
             Combo::Triangle(s) => s.mutate(w, h, rng),
             Combo::Ellipse(s) => s.mutate(w, h, rng),

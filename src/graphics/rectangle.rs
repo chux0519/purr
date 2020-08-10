@@ -4,8 +4,7 @@ use crate::graphics::point::*;
 use crate::graphics::scanline::*;
 use crate::graphics::Shape;
 use crate::{Rgba, RgbaImage};
-use rand::rngs::SmallRng;
-use rand::Rng;
+use rand::{Rng, RngCore, SeedableRng};
 use rand_distr::StandardNormal;
 
 #[derive(Debug, Clone, Copy)]
@@ -26,7 +25,7 @@ impl Default for Rectangle {
 }
 
 impl Rectangle {
-    fn do_mutate(&mut self, w: u32, h: u32, r: u32, rng: &mut SmallRng) {
+    fn do_mutate<T: SeedableRng + RngCore>(&mut self, w: u32, h: u32, r: u32, rng: &mut T) {
         match r {
             0 => {
                 self.p.x = clamp(
@@ -58,7 +57,7 @@ impl Rectangle {
 }
 
 impl Shape for Rectangle {
-    fn random(w: u32, h: u32, rng: &mut SmallRng) -> Self {
+    fn random<T: SeedableRng + RngCore>(w: u32, h: u32, rng: &mut T) -> Self {
         let px = rng.gen_range(0, w as i32);
         let py = rng.gen_range(0, h as i32);
         let x = rng.gen_range(0, 32) + 1;
@@ -70,7 +69,7 @@ impl Shape for Rectangle {
             y,
         }
     }
-    fn mutate(&mut self, w: u32, h: u32, rng: &mut SmallRng) {
+    fn mutate<T: SeedableRng + RngCore>(&mut self, w: u32, h: u32, rng: &mut T) {
         let r = rng.gen_range(0, 2);
         self.do_mutate(w, h, r, rng);
     }
@@ -128,13 +127,13 @@ impl Default for RotatedRectangle {
 }
 
 impl Shape for RotatedRectangle {
-    fn random(w: u32, h: u32, rng: &mut SmallRng) -> Self {
+    fn random<T: SeedableRng + RngCore>(w: u32, h: u32, rng: &mut T) -> Self {
         RotatedRectangle {
             degree: rng.gen_range(0, 360),
             rect: Rectangle::random(w, h, rng),
         }
     }
-    fn mutate(&mut self, w: u32, h: u32, rng: &mut SmallRng) {
+    fn mutate<T: SeedableRng + RngCore>(&mut self, w: u32, h: u32, rng: &mut T) {
         self.rect.mutate(w, h, rng);
         match rng.gen_range(0, 3) {
             0 => {

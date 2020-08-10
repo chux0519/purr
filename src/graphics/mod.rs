@@ -15,12 +15,12 @@ pub use rectangle::*;
 pub use scanline::*;
 pub use triangle::*;
 
-use rand::rngs::SmallRng;
+use rand::{RngCore, SeedableRng};
 
 pub trait Shape {
     fn rasterize(&self, w: u32, h: u32) -> Vec<Scanline>;
-    fn random(w: u32, h: u32, rng: &mut SmallRng) -> Self;
-    fn mutate(&mut self, w: u32, h: u32, rng: &mut SmallRng);
+    fn random<T: SeedableRng + RngCore>(w: u32, h: u32, rng: &mut T) -> Self;
+    fn mutate<T: SeedableRng + RngCore>(&mut self, w: u32, h: u32, rng: &mut T);
     fn draw(&self, img: &mut RgbaImage, color: &Rgba<u8>);
     fn to_svg(&self, attr: &str) -> String;
 }

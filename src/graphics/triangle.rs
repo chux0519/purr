@@ -4,8 +4,7 @@ use crate::graphics::scanline::*;
 use crate::graphics::Shape;
 use crate::{clamp, degrees};
 use crate::{Rgba, RgbaImage};
-use rand::rngs::SmallRng;
-use rand::Rng;
+use rand::{Rng, RngCore, SeedableRng};
 use rand_distr::StandardNormal;
 
 #[derive(Debug, Clone, Copy)]
@@ -77,7 +76,7 @@ impl Shape for Triangle {
         }
         visible_lines
     }
-    fn random(w: u32, h: u32, rng: &mut SmallRng) -> Self {
+    fn random<T: SeedableRng + RngCore>(w: u32, h: u32, rng: &mut T) -> Self {
         let x1 = rng.gen_range(0, w as i32);
         let y1 = rng.gen_range(0, h as i32);
         let x2 = x1 + rng.gen_range(0, 31) - 15;
@@ -93,7 +92,7 @@ impl Shape for Triangle {
         triangle.mutate(w, h, rng);
         triangle
     }
-    fn mutate(&mut self, w: u32, h: u32, rng: &mut SmallRng) {
+    fn mutate<T: SeedableRng + RngCore>(&mut self, w: u32, h: u32, rng: &mut T) {
         let m = 16;
         loop {
             match rng.gen_range(0, 3) {
