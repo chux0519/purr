@@ -182,7 +182,10 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
     fn run(&mut self, model: &mut Self::M, output: &str) {
         let pool = ThreadPool::new(self.thread_number as usize);
         // spawn workers
-        let worker_model_m = model.m / self.thread_number;
+        let mut worker_model_m = model.m / self.thread_number;
+        if model.m % self.thread_number != 0 {
+            worker_model_m += 1;
+        }
         for _ in 0..self.thread_number {
             let (cmd_s, cmd_r) = bounded(1);
             let (res_s, res_r) = bounded(1);
