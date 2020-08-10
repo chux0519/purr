@@ -50,7 +50,11 @@ try it yourself for more.
 
 This program is CPU intensive, it does all rendering in memory.
 
-But it still runs very fast on release build, It's even faster than the original implementation.
+Purr is faster than the original implementation.
+
+Benchmark using `-n 100 -m {0-5}`, see the results below.
+
+> hyperfine --parameter-scan m 0 5 -D 1 './target/release/purr -i ./assets/input.png -o assets/purr.{m}.png -n 100 -m {m}' '~/go/bin/primitive -i ./assets/input.png -o assets/primitive.{m}.png -n 100 -m {m}' --export-json benchmark.json
 
 
 | Command | Mode | Mean [s] | Min [s] | Max [s] | result |
