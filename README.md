@@ -53,20 +53,20 @@ This program is CPU intensive, it does all rendering in memory.
 But it still runs very fast on release build, It's even faster than the original implementation.
 
 
-| Command | Mean [s] | Min [s] | Max [s] | result |
-|:---|---:|---:|---:|---:|
-|purr (combo)|9.980 ± 0.254|9.503|10.381| ![](./assets/purr.0.png)|
-|primitive (combo)|14.564 ± 0.328|14.154|15.036| ![](./assets/primitive.0.png)|
-|purr (triangle)|6.927 ± 0.201|6.510|7.136| ![](./assets/purr.1.png)|
-|primitive (triangle)|10.577 ± 0.266|10.109|10.879| ![](./assets/primitive.1.png)|
-|purr (rect)|6.224 ± 0.087|6.132|6.380| ![](./assets/purr.2.png)|
-|primitive (rect)|7.505 ± 0.105|7.388|7.765| ![](./assets/primitive.2.png)|
-|purr (ellipse)|12.516 ± 0.098|12.354|12.674| ![](./assets/purr.3.png)|
-|primitive (ellipse)|14.643 ± 0.279|14.189|15.193| ![](./assets/primitive.3.png)|
-|purr (circle)|15.054 ± 0.236|14.739|15.452| ![](./assets/purr.4.png)|
-|primitive (circle)|17.375 ± 0.187|17.156|17.760| ![](./assets/primitive.4.png)|
-|purr (rotatedrect)|8.045 ± 0.081|7.938|8.220| ![](./assets/purr.5.png)|
-|primitive (rotatedrect)|9.181 ± 0.154|8.922|9.496| ![](./assets/primitive.5.png)|
+| Command | Mode | Mean [s] | Min [s] | Max [s] | result |
+|:---|---|---:|---:|---:|---:|
+|purr|combo| 9.980 ± 0.254|9.503|10.381| ![](./assets/purr.0.png)|
+|primitive|combo| 14.564 ± 0.328|14.154|15.036| ![](./assets/primitive.0.png)|
+|purr|triangle| 6.927 ± 0.201|6.510|7.136| ![](./assets/purr.1.png)|
+|primitive|triangle| 10.577 ± 0.266|10.109|10.879| ![](./assets/primitive.1.png)|
+|purr|rect| 6.224 ± 0.087|6.132|6.380| ![](./assets/purr.2.png)|
+|primitive|rect| 7.505 ± 0.105|7.388|7.765| ![](./assets/primitive.2.png)|
+|purr|ellipse| 12.516 ± 0.098|12.354|12.674| ![](./assets/purr.3.png)|
+|primitive|ellipse| 14.643 ± 0.279|14.189|15.193| ![](./assets/primitive.3.png)|
+|purr|circle| 15.054 ± 0.236|14.739|15.452| ![](./assets/purr.4.png)|
+|primitive|circle| 17.375 ± 0.187|17.156|17.760| ![](./assets/primitive.4.png)|
+|purr|rotatedrect| 8.045 ± 0.081|7.938|8.220| ![](./assets/purr.5.png)|
+|primitive|rotatedrect| 9.181 ± 0.154|8.922|9.496| ![](./assets/primitive.5.png)|
 
 
 ## TODO
