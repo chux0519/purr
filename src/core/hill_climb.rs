@@ -17,10 +17,6 @@ pub fn best_hill_climb<T: PurrShape>(
         if climb_state.score < best_state.score {
             best_state = climb_state;
         }
-        //println!(
-        //    "{}x random: {} -> {}x hill climb: {}",
-        //    n, best_rand_state.score, age, best_state.score
-        //);
     }
 
     best_state
@@ -37,16 +33,15 @@ pub fn hill_climb<T: PurrShape>(
     // best result
     let mut i = 0;
     loop {
-        if i >= age {
+        if i > age {
             // cannot find any better state
             break;
         }
         cur_state.shape.mutate(ctx.w, ctx.h, &mut ctx.rng);
         let lines = cur_state.shape.rasterize(ctx.w, ctx.h);
-        let alpha = clamp(ctx.rng.gen_range(0, 21) as i32 - 10 + 128, 1, 255);
+        let alpha = clamp(ctx.rng.gen_range(-10, 11) as i32 + 128, 1, 255);
         if lines.is_empty() {
             cur_state = state;
-            i += 1;
             continue;
         }
         assert!(!lines.is_empty());
@@ -58,12 +53,12 @@ pub fn hill_climb<T: PurrShape>(
         }
 
         if cur_state.score < best_state.score {
-            // find a better state
+            // find a new, better state
             best_state = cur_state;
             i = 0;
         } else {
-            // undo, restore to original state
-            cur_state = state;
+            // undo, restore to last best state
+            cur_state = best_state;
             i += 1;
         }
     }
