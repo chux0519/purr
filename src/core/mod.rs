@@ -188,6 +188,7 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
             let (res_s, res_r) = bounded(1);
             let mut worker_model = model.clone();
             worker_model.m = worker_model_m;
+            worker_model.context.rng = SmallRng::from_entropy();
             let mut worker = PurrWorker::new(worker_model, cmd_r, res_s);
             self.txs.push(cmd_s);
             self.rxs.push(res_r);
