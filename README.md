@@ -55,18 +55,19 @@ But it still runs very fast on release build, It's even faster than the original
 
 | Command | Mean [s] | Min [s] | Max [s] | result |
 |:---|---:|---:|---:|---:|
-| `./target/release/purr -i ./assets/input.png -o assets/purr.0.png -n 100 -m 0` | 8.185 ± 0.436 | 7.170 | 8.587 | ![](./assets/purr.0.png) |
-| `~/go/bin/primitive -i ./assets/input.png -o assets/primitive.0.png -n 100 -m 0` | 15.164 ± 0.172 | 14.812 | 15.352 | ![](./assets/primitive.0.png) |
-| `./target/release/purr -i ./assets/input.png -o assets/purr.1.png -n 100 -m 1` | 3.654 ± 0.108 | 3.537 | 3.804 | ![](./assets/purr.1.png) |
-| `~/go/bin/primitive -i ./assets/input.png -o assets/primitive.1.png -n 100 -m 1` | 10.610 ± 0.233 | 10.334 | 10.953 | ![](./assets/primitive.1.png) |
-| `./target/release/purr -i ./assets/input.png -o assets/purr.2.png -n 100 -m 2` | 4.396 ± 0.052 | 4.329 | 4.488 | ![](./assets/purr.2.png) |
-| `~/go/bin/primitive -i ./assets/input.png -o assets/primitive.2.png -n 100 -m 2` | 7.751 ± 0.190 | 7.490 | 8.040 | ![](./assets/primitive.2.png) |
-| `./target/release/purr -i ./assets/input.png -o assets/purr.3.png -n 100 -m 3` | 10.907 ± 0.105 | 10.736 | 11.096 | ![](./assets/purr.3.png) |
-| `~/go/bin/primitive -i ./assets/input.png -o assets/primitive.3.png -n 100 -m 3` | 14.735 ± 0.107 | 14.564 | 14.852 | ![](./assets/primitive.3.png) |
-| `./target/release/purr -i ./assets/input.png -o assets/purr.4.png -n 100 -m 4` | 13.485 ± 0.172 | 13.158 | 13.735 | ![](./assets/purr.4.png) |
-| `~/go/bin/primitive -i ./assets/input.png -o assets/primitive.4.png -n 100 -m 4` | 17.508 ± 0.159 | 17.218 | 17.712 | ![](./assets/primitive.4.png) |
-| `./target/release/purr -i ./assets/input.png -o assets/purr.5.png -n 100 -m 5` | 5.124 ± 0.042 | 5.073 | 5.184 | ![](./assets/purr.5.png) |
-| `~/go/bin/primitive -i ./assets/input.png -o assets/primitive.5.png -n 100 -m 5` | 9.250 ± 0.174 | 9.031 | 9.659 | ![](./assets/primitive.5.png) |
+|purr (combo)|9.980 ± 0.254|9.503|10.381| ![](./assets/purr.0.png)|
+|primitive (combo)|14.564 ± 0.328|14.154|15.036| ![](./assets/primitive.0.png)|
+|purr (triangle)|6.927 ± 0.201|6.510|7.136| ![](./assets/purr.1.png)|
+|primitive (triangle)|10.577 ± 0.266|10.109|10.879| ![](./assets/primitive.1.png)|
+|purr (rect)|6.224 ± 0.087|6.132|6.380| ![](./assets/purr.2.png)|
+|primitive (rect)|7.505 ± 0.105|7.388|7.765| ![](./assets/primitive.2.png)|
+|purr (ellipse)|12.516 ± 0.098|12.354|12.674| ![](./assets/purr.3.png)|
+|primitive (ellipse)|14.643 ± 0.279|14.189|15.193| ![](./assets/primitive.3.png)|
+|purr (circle)|15.054 ± 0.236|14.739|15.452| ![](./assets/purr.4.png)|
+|primitive (circle)|17.375 ± 0.187|17.156|17.760| ![](./assets/primitive.4.png)|
+|purr (rotatedrect)|8.045 ± 0.081|7.938|8.220| ![](./assets/purr.5.png)|
+|primitive (rotatedrect)|9.181 ± 0.154|8.922|9.496| ![](./assets/primitive.5.png)|
+
 
 ## TODO
 
