@@ -98,36 +98,36 @@ impl Shape for Triangle {
             match rng.gen_range(0, 3) {
                 0 => {
                     self.a.x = clamp(
-                        self.a.x + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
+                        self.a.x + (m as f64 * rng.sample::<f64, _>(StandardNormal)) as i32,
                         -m,
                         w as i32 - 1 + m,
                     );
                     self.a.y = clamp(
-                        self.a.y + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
+                        self.a.y + (m as f64 * rng.sample::<f64, _>(StandardNormal)) as i32,
                         -m,
                         h as i32 - 1 + m,
                     );
                 }
                 1 => {
                     self.b.x = clamp(
-                        self.b.x + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
+                        self.b.x + (m as f64 * rng.sample::<f64, _>(StandardNormal)) as i32,
                         -m,
                         w as i32 - 1 + m,
                     );
                     self.b.y = clamp(
-                        self.b.y + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
+                        self.b.y + (m as f64 * rng.sample::<f64, _>(StandardNormal)) as i32,
                         -m,
                         h as i32 - 1 + m,
                     );
                 }
                 2 => {
                     self.c.x = clamp(
-                        self.c.x + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
+                        self.c.x + (m as f64 * rng.sample::<f64, _>(StandardNormal)) as i32,
                         -m,
                         w as i32 - 1 + m,
                     );
                     self.c.y = clamp(
-                        self.c.y + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
+                        self.c.y + (m as f64 * rng.sample::<f64, _>(StandardNormal)) as i32,
                         -m,
                         h as i32 - 1 + m,
                     );
