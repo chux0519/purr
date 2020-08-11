@@ -1,4 +1,5 @@
 use crate::core::PurrShape;
+use crate::graphics::bresenham::rasterize_polygon;
 use crate::graphics::point::*;
 use crate::graphics::scanline::*;
 use crate::graphics::Shape;
@@ -66,7 +67,7 @@ impl Shape for Triangle {
     }
     fn rasterize(&self, w: u32, h: u32) -> Vec<Scanline> {
         let points = vec![self.a, self.b, self.c];
-        let lines = scan_polygon(&points, w, h);
+        let lines = rasterize_polygon(&points, w, h);
         let mut visible_lines: Vec<Scanline> = lines
             .into_iter()
             .filter(|l| l.x1 <= l.x2 && l.x2 > 0 && l.x1 < w && l.y > 0 && l.y < h)

@@ -1,5 +1,6 @@
 use crate::clamp;
 use crate::core::PurrShape;
+use crate::graphics::bresenham::rasterize_polygon;
 use crate::graphics::point::*;
 use crate::graphics::scanline::*;
 use crate::graphics::Shape;
@@ -90,7 +91,7 @@ impl Shape for Rectangle {
                 y: self.p.y + self.y as i32,
             },
         ];
-        scan_polygon(&points, w, h)
+        rasterize_polygon(&points, w, h)
     }
 
     fn draw(&self, img: &mut RgbaImage, color: &Rgba<u8>) {
@@ -172,7 +173,7 @@ impl Shape for RotatedRectangle {
         rotate_point(&c, &mut p2, self.degree as f32);
         rotate_point(&c, &mut p3, self.degree as f32);
         let points = vec![p0, p1, p2, p3];
-        let lines = scan_polygon(&points, w, h);
+        let lines = rasterize_polygon(&points, w, h);
         let mut visible_lines: Vec<Scanline> = lines
             .into_iter()
             .filter(|l| l.x1 <= l.x2 && l.x2 > 0 && l.x1 < w && l.y > 0 && l.y < h)
