@@ -129,6 +129,7 @@ pub fn rasterize_quad_bezier_seg(
     mut y2: i32,
     buf_lhs: &mut Vec<i32>,
     buf_rhs: &mut Vec<i32>,
+    scanlines: &mut Vec<Scanline>,
     w: u32,
     h: u32,
     ymin: i32,
@@ -180,19 +181,18 @@ pub fn rasterize_quad_bezier_seg(
         yy += yy;
         err = dx + dy + xy as f64;
         loop {
-            // TODO: setPixel(x0, y0);
             let y = y0 - ymin;
             if y >= 0 && y < h as i32 {
                 if x0 >= 0 {
                     let x = clamp(x0, 0, w as i32 - 1);
-                    if rhs {
-                        buf_rhs[y as usize] = x;
-                    } else if lhs {
-                        buf_lhs[y as usize] = x;
-                    } else {
-                        buf_lhs[y as usize] = std::cmp::min(x, buf_lhs[y as usize]);
-                        buf_rhs[y as usize] = std::cmp::max(x, buf_rhs[y as usize]);
-                    }
+                    // used by bezier curve
+                    scanlines.push({
+                        Scanline {
+                            y: clamp(y0, 0, h as i32 - 1) as u32,
+                            x1: x as u32,
+                            x2: x as u32,
+                        }
+                    });
                 }
             }
             /* y step */
@@ -217,7 +217,6 @@ pub fn rasterize_quad_bezier_seg(
             }
         }
     }
-    // TODO: plotLine(x0, y0, x2, y2);
     let p0 = Point { x: x0, y: y0 };
     let p2 = Point { x: x2, y: y2 };
     rasterize_line(&p0, &p2, buf_lhs, buf_rhs, w, h, ymin);
@@ -233,6 +232,7 @@ pub fn rasterize_quad_bezier(
     mut y2: i32,
     buf_lhs: &mut Vec<i32>,
     buf_rhs: &mut Vec<i32>,
+    scanlines: &mut Vec<Scanline>,
     w: u32,
     h: u32,
     ymin: i32,
@@ -272,6 +272,7 @@ pub fn rasterize_quad_bezier(
             y,
             buf_lhs,
             buf_rhs,
+            scanlines,
             w,
             h,
             ymin,
@@ -301,6 +302,7 @@ pub fn rasterize_quad_bezier(
             y,
             buf_lhs,
             buf_rhs,
+            scanlines,
             w,
             h,
             ymin,
@@ -311,6 +313,284 @@ pub fn rasterize_quad_bezier(
         y1 = y;
         y0 = y1
     }
-    rasterize_quad_bezier_seg(x0, y0, x1, y1, x2, y2, buf_lhs, buf_rhs, w, h, ymin);
-    /* remaining part */
+    rasterize_quad_bezier_seg(
+        x0, y0, x1, y1, x2, y2, buf_lhs, buf_rhs, scanlines, w, h, ymin,
+    );
+    /* remaining part */ /* remaining part */ /* remaining part */ /* remaining part */
+}
+
+// rational
+pub fn rasterize_quad_rational_bezier_seg(
+    mut x0: i32,
+    mut y0: i32,
+    mut x1: i32,
+    mut y1: i32,
+    mut x2: i32,
+    mut y2: i32,
+    mut w: f64,
+    buf_lhs: &mut Vec<i32>,
+    buf_rhs: &mut Vec<i32>,
+    w_: u32,
+    h: u32,
+    ymin: i32,
+) {
+    /* plot a limited rational Bezier segment, squared weight */
+    let mut sx = x2 - x1; /* relative values for checks */
+    let mut sy = y2 - y1; /* curvature */
+    let rhs = sy > 0;
+    let lhs = sy < 0;
+    let mut dx = (x0 - x2) as f64; /* sign of gradient must not change */
+    let mut dy = (y0 - y2) as f64;
+    let mut xx = (x0 - x1) as f64;
+    let mut yy = (y0 - y1) as f64;
+    let mut xy = xx * sy as f64 + yy * sx as f64;
+    let mut cur = xx * sy as f64 - yy * sx as f64;
+    let mut err;
+    assert!(xx * sx as f64 <= 0.0f64 && yy * sy as f64 <= 0.0f64);
+    if cur != 0.0f64 && w as f64 > 0.0f64 {
+        /* no straight line */
+        if (sx * sx + sy * sy) as f64 > xx * xx + yy * yy {
+            /* begin with longer part */
+            x2 = x0;
+            x0 = (x0 as f64 - dx) as i32;
+            y2 = y0;
+            y0 = (y0 as f64 - dy) as i32;
+            cur = -cur
+            /* swap P0 P2 */
+        }
+        /* gradient negates -> algorithm fails */
+        xx = 2.0f64 * (4.0f64 * w * sx as f64 * xx + dx * dx); /* differences 2nd degree */
+        yy = 2.0f64 * (4.0f64 * w * sy as f64 * yy + dy * dy); /* x step direction */
+        sx = if x0 < x2 { 1 } else { -1 }; /* y step direction */
+        sy = if y0 < y2 { 1 } else { -1 };
+        xy = -2.0f64 * sx as f64 * sy as f64 * (2.0f64 * w * xy + dx * dy);
+        if (cur * sx as f64 * sy as f64) < 0.0f64 {
+            /* negated curvature? */
+            xx = -xx; /* differences 1st degree */
+            yy = -yy;
+            xy = -xy;
+            cur = -cur
+        }
+        dx = 4.0f64 * w * (x1 - x0) as f64 * sy as f64 * cur + xx / 2.0f64 + xy;
+        dy = 4.0f64 * w * (y0 - y1) as f64 * sx as f64 * cur + yy / 2.0f64 + xy;
+        if (w) < 0.5f64 && (dy > xy || dx < xy) {
+            /* flat ellipse, algorithm fails */
+            cur = (w + 1.0f64) / 2.0f64; /* subdivide curve in half */
+            w = w.sqrt() as f64; /* plot separately */
+            xy = 1.0f64 / (w + 1.0f64); /* error 1.step */
+            sx = ((x0 as f64 + 2.0f64 * w * x1 as f64 + x2 as f64) * xy / 2.0f64 + 0.5f64).floor()
+                as i32; /* plot curve */
+            sy = ((y0 as f64 + 2.0f64 * w * y1 as f64 + y2 as f64) * xy / 2.0f64 + 0.5f64).floor()
+                as i32;
+            dx = ((w * x1 as f64 + x0 as f64) as f64 * xy + 0.5f64).floor();
+            dy = ((y1 as f64 * w + y0 as f64) as f64 * xy + 0.5f64).floor();
+            rasterize_quad_rational_bezier_seg(
+                x0, y0, dx as i32, dy as i32, sx, sy, cur as f64, buf_lhs, buf_rhs, w_, h, ymin,
+            );
+            dx = ((w * x1 as f64 + x2 as f64) * xy + 0.5f64).floor();
+            dy = ((y1 as f64 * w + y2 as f64) * xy + 0.5f64).floor();
+            rasterize_quad_rational_bezier_seg(
+                sx, sy, dx as i32, dy as i32, x2, y2, cur as f64, buf_lhs, buf_rhs, w_, h, ymin,
+            );
+            return;
+        }
+        err = dx + dy - xy;
+        loop {
+            let y = y0 - ymin;
+            if y >= 0 && y < h as i32 {
+                if x0 >= 0 {
+                    let x = clamp(x0, 0, w_ as i32 - 1);
+                    if rhs {
+                        buf_rhs[y as usize] = x;
+                    } else if lhs {
+                        buf_lhs[y as usize] = x;
+                    } else {
+                        buf_lhs[y as usize] = std::cmp::min(x, buf_lhs[y as usize]);
+                        buf_rhs[y as usize] = std::cmp::max(x, buf_rhs[y as usize]);
+                    }
+                }
+            }
+            /* x step */
+            if x0 == x2 && y0 == y2 {
+                return;
+            } /* last pixel -> curve finished */
+            x1 = (2.0 * err > dy) as i32; /* save value for test of x step */
+            y1 = (2.0 * (err + yy) < -dy) as i32; /* y step */
+            if 2.0 * err < dx || y1 != 0 {
+                y0 += sy;
+                dy += xy;
+                dx += xx;
+                err += dx
+            }
+            if 2.0 * err > dx || x1 != 0 {
+                x0 += sx;
+                dx += xy;
+                dy += yy;
+                err += dy
+            }
+            if !(dy <= xy && dx >= xy) {
+                break;
+            }
+        }
+    }
+    /* plot remaining needle to end */
+    let p0 = Point { x: x0, y: y0 };
+    let p2 = Point { x: x2, y: y2 };
+    rasterize_line(&p0, &p2, buf_lhs, buf_rhs, w_, h, ymin);
+}
+
+pub fn rasterize_quad_rational_bezier(
+    mut x0: i32,
+    mut y0: i32,
+    mut x1: i32,
+    mut y1: i32,
+    mut x2: i32,
+    mut y2: i32,
+    mut w: f64,
+    buf_lhs: &mut Vec<i32>,
+    buf_rhs: &mut Vec<i32>,
+    w_: u32,
+    h: u32,
+    ymin: i32,
+) {
+    /* plot any quadratic rational Bezier curve */
+    let mut x = x0 - 2 * x1 + x2;
+    let mut y = y0 - 2 * y1 + y2;
+    let mut xx = (x0 - x1) as f64;
+    let mut yy = (y0 - y1) as f64;
+    let mut ww;
+    let mut t;
+    let mut q;
+    assert!(w >= 0.0f64);
+    if xx * (x2 - x1) as f64 > 0.0 {
+        /* horizontal cut at P4? */
+        if yy * (y2 - y1) as f64 > 0.0 {
+            /* now horizontal cut at P4 comes first */
+            /* vertical cut at P6 too? */
+            if (xx * y as f64).abs() > (yy * x as f64).abs() {
+                /* which first? */
+                x0 = x2;
+                x2 = (xx + x1 as f64) as i32;
+                y0 = y2;
+                y2 = (yy + y1 as f64) as i32
+                /* swap points */
+            }
+        }
+        if x0 == x2 || w == 1.0f64 {
+            t = (x0 - x1) as f64 / x as f64
+        } else {
+            /* P0 = P4, P1 = P8 */
+            /* non-rational or rational case */
+            q = (4.0f64 * w as f64 * w as f64 * (x0 - x1) as f64 * (x2 - x1) as f64
+                + ((x2 - x0) * (x2 - x0)) as f64)
+                .sqrt();
+            if x1 < x0 {
+                q = -q
+            }
+            t = (2.0f64 * w * (x0 - x1) as f64 - x0 as f64 + x2 as f64 + q)
+                / (2.0f64 * (1.0f64 - w) * (x2 - x0) as f64)
+            /* t at P4 */
+        } /* sub-divide at t */
+        q = 1.0f64 / (2.0f64 * t * (1.0f64 - t) * (w - 1.0f64) + 1.0f64); /* = P4 */
+        xx = (t * t * (x0 as f64 - 2.0f64 * w * x1 as f64 + x2 as f64)
+            + 2.0f64 * t * (w * x1 as f64 - x0 as f64)
+            + x0 as f64)
+            * q; /* squared weight P3 */
+        yy = (t * t * (y0 as f64 - 2.0f64 * w * y1 as f64 + y2 as f64)
+            + 2.0f64 * t * (w * y1 as f64 - y0 as f64)
+            + y0 as f64)
+            * q; /* weight P8 */
+        ww = t * (w - 1.0f64) + 1.0f64; /* P4 */
+        ww *= ww * q; /* intersect P3 | P0 P1 */
+        w = ((1.0f64 - t) * (w as f64 - 1.0f64) + 1.0f64) * q.sqrt(); /* intersect P4 | P1 P2 */
+        x = (xx + 0.5f64).floor() as i32;
+        y = (yy + 0.5f64).floor() as i32;
+        yy = (xx - x0 as f64) * (y1 - y0) as f64 / (x1 - x0) as f64 + y0 as f64;
+        rasterize_quad_rational_bezier_seg(
+            x0,
+            y0,
+            x,
+            (yy + 0.5f64).floor() as i32,
+            x,
+            y,
+            ww,
+            buf_lhs,
+            buf_rhs,
+            w_,
+            h,
+            ymin,
+        );
+        yy = (xx - x2 as f64) * (y1 - y2) as f64 / (x1 - x2) as f64 + y2 as f64;
+        y1 = (yy + 0.5f64).floor() as i32;
+        x1 = x;
+        x0 = x1;
+        y0 = y
+    }
+    if (y0 - y1) * (y2 - y1) > 0 {
+        /* vertical cut at P6? */
+        if y0 == y2 || w == 1.0f64 {
+            t = (y0 - y1) as f64 / (y0 as f64 - 2.0f64 * y1 as f64 + y2 as f64)
+        } else {
+            /* non-rational or rational case */
+            q = (4.0f64 * w * w * (y0 - y1) as f64 * (y2 - y1) as f64
+                + ((y2 - y0) * (y2 - y0)) as f64)
+                .sqrt();
+            if y1 < y0 {
+                q = -q
+            }
+            t = (2.0f64 * w * (y0 - y1) as f64 - y0 as f64 + y2 as f64 + q)
+                / (2.0f64 * (1.0f64 - w) * (y2 - y0) as f64)
+            /* t at P6 */
+        }
+        /* P0 = P6, P1 = P7 */
+        q = 1.0f64 / (2.0f64 * t * (1.0f64 - t) * (w - 1.0f64) + 1.0f64); /* sub-divide at t */
+        xx = (t * t * (x0 as f64 - 2.0f64 * w * x1 as f64 + x2 as f64)
+            + 2.0f64 * t * (w * x1 as f64 - x0 as f64) as f64
+            + x0 as f64)
+            * q; /* = P6 */
+        yy = (t * t * (y0 as f64 - 2.0f64 * w * y1 as f64 + y2 as f64)
+            + 2.0f64 * t * (w * y1 as f64 - y0 as f64) as f64
+            + y0 as f64)
+            * q; /* squared weight P5 */
+        ww = t * (w - 1.0f64) + 1.0f64; /* weight P7 */
+        ww *= ww * q; /* P6 */
+        w = ((1.0f64 - t) * (w - 1.0f64) + 1.0f64) * q.sqrt(); /* intersect P6 | P0 P1 */
+        x = (xx + 0.5f64).floor() as i32; /* intersect P7 | P1 P2 */
+        y = (yy + 0.5f64).floor() as i32;
+        xx = (x1 - x0) as f64 * (yy - y0 as f64) / (y1 - y0) as f64 + x0 as f64;
+        rasterize_quad_rational_bezier_seg(
+            x0,
+            y0,
+            (xx + 0.5f64).floor() as i32,
+            y,
+            x,
+            y,
+            ww,
+            buf_lhs,
+            buf_rhs,
+            w_,
+            h,
+            ymin,
+        );
+        xx = (x1 - x2) as f64 * (yy - y2 as f64) / (y1 - y2) as f64 + x2 as f64;
+        x1 = (xx + 0.5f64).floor() as i32;
+        x0 = x;
+        y1 = y;
+        y0 = y1
+    }
+    rasterize_quad_rational_bezier_seg(
+        x0,
+        y0,
+        x1,
+        y1,
+        x2,
+        y2,
+        w * w,
+        buf_lhs,
+        buf_rhs,
+        w_,
+        h,
+        ymin,
+    );
+    /* remaining */
 }

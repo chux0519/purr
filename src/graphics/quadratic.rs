@@ -1,6 +1,6 @@
 use crate::clamp;
 use crate::core::PurrShape;
-use crate::graphics::bresenham::rasterize_quad_bezier;
+use crate::graphics::bresenham::{rasterize_quad_bezier, rasterize_quad_rational_bezier};
 use crate::graphics::{Point, Scanline, Shape};
 use crate::{Rgba, RgbaImage};
 use rand::{Rng, RngCore, SeedableRng};
@@ -11,7 +11,6 @@ pub struct Quadratic {
     pub p0: Point,
     pub p1: Point,
     pub p2: Point,
-    pub w: f64,
 }
 
 impl Default for Quadratic {
@@ -20,7 +19,6 @@ impl Default for Quadratic {
             p0: Point { x: 0, y: 0 },
             p1: Point { x: 0, y: 0 },
             p2: Point { x: 0, y: 0 },
-            w: 0.0,
         }
     }
 }
@@ -53,14 +51,14 @@ impl Shape for Quadratic {
             x: px + rng.gen_range(-20, 20),
             y: py + rng.gen_range(-20, 20),
         };
-        let mut q = Quadratic { p0, p1, p2, w: 0.5 };
+        let mut q = Quadratic { p0, p1, p2 };
         q.mutate(w, h, rng);
         q
     }
 
     fn mutate<T: SeedableRng + RngCore>(&mut self, w: u32, h: u32, rng: &mut T) {
         loop {
-            match rng.gen_range(0, 3) {
+            match rng.gen_range(0, 2) {
                 0 => {
                     self.p0.x = clamp(
                         self.p0.x + (16.0 * rng.sample::<f64, _>(StandardNormal)) as i32,
@@ -97,7 +95,6 @@ impl Shape for Quadratic {
                         h as i32 - 1,
                     );
                 }
-                3 => self.w = self.w + rng.sample::<f64, _>(StandardNormal),
                 _ => unreachable!(),
             }
             if self.valid() {
@@ -107,7 +104,15 @@ impl Shape for Quadratic {
     }
 
     fn rasterize(&self, w: u32, h: u32) -> Vec<Scanline> {
-        rasterize_quadratic(self, w, h)
+        let lines = rasterize_quadratic(self, w, h);
+        let mut visible_lines: Vec<Scanline> = lines
+            .into_iter()
+            .filter(|l| l.x1 <= l.x2 && l.x2 > 0 && l.x1 < w && l.y > 0 && l.y < h)
+            .collect();
+        for line in &mut visible_lines {
+            line.crop(w, h);
+        }
+        visible_lines
     }
 
     fn draw(&self, img: &mut RgbaImage, color: &Rgba<u8>) {
@@ -122,7 +127,7 @@ impl Shape for Quadratic {
         let attr = attr.replace("fill", "stroke");
         format!(
             "<path {} fill=\"none\" d=\"M {} {} Q {} {}, {} {}\" stroke-width=\"{}\" />",
-            attr, self.p0.x, self.p0.y, self.p1.x, self.p1.y, self.p2.x, self.p2.y, self.w
+            attr, self.p0.x, self.p0.y, self.p1.x, self.p1.y, self.p2.x, self.p2.y, 1.0
         )
     }
 }
@@ -140,8 +145,9 @@ fn rasterize_quadratic(q: &Quadratic, w: u32, h: u32) -> Vec<Scanline> {
     }
     let range = (ymax - ymin) as usize;
 
-    let mut buf_lhs: Vec<i32> = vec![std::i32::MAX; range + 1];
-    let mut buf_rhs: Vec<i32> = vec![std::i32::MIN; range + 1];
+    let mut buf_lhs: Vec<i32> = vec![std::i32::MAX; range + 2];
+    let mut buf_rhs: Vec<i32> = vec![std::i32::MIN; range + 2];
+    let mut scanlines = Vec::new();
 
     let x0 = q.p0.x;
     let y0 = q.p0.y;
@@ -159,11 +165,11 @@ fn rasterize_quadratic(q: &Quadratic, w: u32, h: u32) -> Vec<Scanline> {
         y2,
         &mut buf_lhs,
         &mut buf_rhs,
+        &mut scanlines,
         w,
         h,
         ymin,
     );
-    let mut scanlines = Vec::new();
     for i in 0..range {
         let y = i as i32 + ymin;
         if y >= 0 && y < h as i32 {
