@@ -1,20 +1,20 @@
-mod bresenham;
 mod circle;
 mod combo;
 mod ellipse;
 mod point;
 mod quadratic;
+mod raster;
 mod rectangle;
 mod scanline;
 mod triangle;
 
 use crate::{Rgba, RgbaImage};
-pub use bresenham::*;
 pub use circle::*;
 pub use combo::*;
 pub use ellipse::*;
 pub use point::*;
 pub use quadratic::*;
+pub use raster::*;
 pub use rectangle::*;
 pub use scanline::*;
 pub use triangle::*;
@@ -28,4 +28,3 @@ pub trait Shape {
     fn draw(&self, img: &mut RgbaImage, color: &Rgba<u8>);
     fn to_svg(&self, attr: &str) -> String;
 }
-

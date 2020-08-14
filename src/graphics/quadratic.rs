@@ -1,6 +1,6 @@
 use crate::clamp;
 use crate::core::PurrShape;
-use crate::graphics::bresenham::{rasterize_quad_bezier, rasterize_quad_rational_bezier};
+use crate::graphics::raster::rasterize_quad_bezier;
 use crate::graphics::{Point, Scanline, Shape};
 use crate::{Rgba, RgbaImage};
 use rand::{Rng, RngCore, SeedableRng};

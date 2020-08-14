@@ -1,6 +1,6 @@
 use crate::core::PurrShape;
-use crate::graphics::bresenham::rasterize_polygon;
 use crate::graphics::point::*;
+use crate::graphics::raster::rasterize_polygon;
 use crate::graphics::scanline::*;
 use crate::graphics::Shape;
 use crate::{clamp, degrees};

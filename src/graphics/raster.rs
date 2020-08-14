@@ -594,3 +594,70 @@ pub fn rasterize_quad_rational_bezier(
     );
     /* remaining */
 }
+
+// Ellipse
+pub fn rasterize_ellipse(o: &Point, rx: u32, ry: u32) -> Vec<Scanline> {
+    let mut lines = Vec::new();
+    let mut x = -(rx as i32);
+    let mut y = 0;
+    let mut e2 = ry as i32;
+    let mut dx = (1 + 2 * x) * e2 * e2;
+    let mut dy = x * x;
+    let mut err = dx + dy;
+    let mut skip = false;
+    loop {
+        if x > 0 {
+            break;
+        }
+        if !skip {
+            lines.push(Scanline {
+                y: clamp_to_u32(o.y + y),
+                x1: clamp_to_u32(o.x + x),
+                x2: clamp_to_u32(o.x - x),
+            });
+            if y != 0 {
+                lines.push(Scanline {
+                    y: clamp_to_u32(o.y - y),
+                    x1: clamp_to_u32(o.x + x),
+                    x2: clamp_to_u32(o.x - x),
+                });
+            }
+        }
+
+        e2 = 2 * err;
+        if e2 >= dx {
+            x += 1;
+            dx += 2 * (ry * ry) as i32;
+            err += dx;
+            skip = true;
+        }
+        if e2 <= dy {
+            y += 1;
+            dy += 2 * (rx * rx) as i32;
+            err += dy;
+            skip = false;
+        }
+    }
+
+    loop {
+        if y >= ry as i32 {
+            break;
+        }
+        lines.push(Scanline {
+            y: clamp_to_u32(o.y + y),
+            x1: clamp_to_u32(o.x),
+            x2: clamp_to_u32(o.x),
+        });
+        lines.push(Scanline {
+            y: clamp_to_u32(o.y - y),
+            x1: clamp_to_u32(o.x),
+            x2: clamp_to_u32(o.x),
+        });
+        y += 1;
+    }
+    lines
+}
+
+fn clamp_to_u32(n: i32) -> u32 {
+    clamp(n, 0, n) as u32
+}
