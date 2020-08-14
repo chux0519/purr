@@ -135,7 +135,6 @@ impl Shape for RotatedRectangle {
         }
     }
     fn mutate<T: SeedableRng + RngCore>(&mut self, w: u32, h: u32, rng: &mut T) {
-        self.rect.mutate(w, h, rng);
         match rng.gen_range(0, 3) {
             0 => {
                 self.rect.do_mutate(w, h, 0, rng);
