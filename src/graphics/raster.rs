@@ -49,7 +49,7 @@ pub fn rasterize_polygon(points: &Vec<Point>, w: u32, h: u32) -> Vec<Scanline> {
     );
 
     let mut scanlines = Vec::new();
-    for i in 0..range {
+    for i in 0..=range {
         let y = i as i32 + ymin;
         if y >= 0 && y < h as i32 {
             if buf_rhs[i] >= 0 {
@@ -660,4 +660,140 @@ pub fn rasterize_ellipse(o: &Point, rx: u32, ry: u32) -> Vec<Scanline> {
 
 fn clamp_to_u32(n: i32) -> u32 {
     clamp(n, 0, n) as u32
+}
+
+// Rotated Triangle
+pub fn rasterize_rotated_ellipse(
+    o: &Point,
+    rx: u32,
+    ry: u32,
+    angle: f64,
+    w_: u32,
+    h: u32,
+) -> Vec<Scanline> {
+    /* plot ellipse rotated by angle (radian) */
+    let mut xd = (rx * rx) as f64;
+    let mut yd = (ry * ry) as f64;
+    let s = angle.sin();
+    let mut zd = (xd - yd) * s; /* ellipse rotation */
+    xd = (xd - zd * s).sqrt();
+    yd = (yd + zd * s).sqrt(); /* surrounding rectangle */
+    let a = xd + 0.5;
+    let b = yd + 0.5;
+    zd = zd * a * b / (xd * yd); /* scale to integer */
+
+    //TODO: zd == 0.0 could rasterize by rectangle
+
+    rasterize_rotated_ellipse_rect(
+        o.x - a as i32,
+        o.y - b as i32,
+        o.x + a as i32,
+        o.y + b as i32,
+        4.0 * zd * angle.cos(),
+        w_,
+        h,
+    )
+}
+
+pub fn rasterize_rotated_ellipse_rect(
+    x0: i32,
+    y0: i32,
+    x1: i32,
+    y1: i32,
+    zd: f64,
+    w_: u32,
+    h: u32,
+) -> Vec<Scanline> {
+    let mut xd = (x1 - x0) as f64;
+    let mut yd = (y1 - y0) as f64;
+    let mut w = xd * yd;
+
+    if w != 0.0 {
+        w = (w - zd) / (w + w);
+    } /* squared weight of P1 */
+
+    if !(w <= 1.0 && w >= 0.0) {
+        return Vec::new();
+    }
+    assert!(w <= 1.0 && w >= 0.0); /* limit angle to |zd|<=xd*yd */
+    xd = (xd * w + 0.5).floor();
+    yd = (yd * w + 0.5).floor(); /* snap xe,ye to int */
+
+    let range = (y1 - y0) as usize;
+
+    // init two y axis buffer
+    let mut buf_lhs: Vec<i32> = vec![std::i32::MAX; range + 1];
+    let mut buf_rhs: Vec<i32> = vec![std::i32::MIN; range + 1];
+
+    rasterize_quad_rational_bezier_seg(
+        x0,
+        y0 + yd as i32,
+        x0,
+        y0,
+        x0 + xd as i32,
+        y0,
+        1.0 - w,
+        &mut buf_lhs,
+        &mut buf_rhs,
+        w_,
+        h,
+        y0,
+    );
+    rasterize_quad_rational_bezier_seg(
+        x0,
+        y0 + yd as i32,
+        x0,
+        y1,
+        x1 - xd as i32,
+        y1,
+        w,
+        &mut buf_lhs,
+        &mut buf_rhs,
+        w_,
+        h,
+        y0,
+    );
+    rasterize_quad_rational_bezier_seg(
+        x1,
+        y1 - yd as i32,
+        x1,
+        y1,
+        x1 - xd as i32,
+        y1,
+        1.0 - w,
+        &mut buf_lhs,
+        &mut buf_rhs,
+        w_,
+        h,
+        y0,
+    );
+    rasterize_quad_rational_bezier_seg(
+        x1,
+        y1 - yd as i32,
+        x1,
+        y0,
+        x0 + xd as i32,
+        y0,
+        w,
+        &mut buf_lhs,
+        &mut buf_rhs,
+        w_,
+        h,
+        y0,
+    );
+
+    let mut scanlines = Vec::new();
+    for i in 0..=range {
+        let y = i as i32 + y0;
+        if y >= 0 && y < h as i32 {
+            if buf_rhs[i] >= 0 {
+                scanlines.push(Scanline {
+                    y: clamp(y as u32, 0, h - 1),
+                    x1: clamp(buf_lhs[i], 0, w_ as i32 - 1) as u32,
+                    x2: clamp(buf_rhs[i], 0, w_ as i32 - 1) as u32,
+                });
+            }
+        }
+    }
+    scanlines
 }
