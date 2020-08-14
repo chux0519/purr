@@ -92,6 +92,10 @@ fn main() {
             shape_number,
             thread_number,
         )),
+        6 => Box::new(PurrMultiThreadRunner::<Quadratic>::new(
+            shape_number,
+            thread_number,
+        )),
         _ => {
             eprintln!("unsupported shape {}", shape);
             unreachable!()
