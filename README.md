@@ -27,7 +27,7 @@ most `primitive` flags are supported.
 | `i` | n/a | input file |
 | `o` | n/a | output file |
 | `n` | n/a | number of shapes |
-| `m` | 1 | mode: 0=combo, 1=triangle, 2=rect, 3=ellipse, 4=circle, 5=rotatedrect |
+| `m` | 1 | mode: 0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse (default 1) |
 | `j` | 0 | number of parallel workers (default uses all cores) |
 | `r` | 256 | resize large input images to this size before processing |
 | `s` | 1024 | output image size |
