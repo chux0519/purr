@@ -76,7 +76,7 @@ Benchmark using `-n 100 -m {0-5}`, see the results below.
 ## TODO
 
 - [ ] More primitives
-  - [ ] beziers
-  - [ ] rotated ellipse
+  - [x] beziers
+  - [X] rotated ellipse
   - [ ] polygon
 
