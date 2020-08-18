@@ -27,7 +27,7 @@ most `primitive` flags are supported.
 | `i` | n/a | input file |
 | `o` | n/a | output file |
 | `n` | n/a | number of shapes |
-| `m` | 1 | mode: 0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse (default 1) |
+| `m` | 1 | mode: 0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse 8=polygon(default 1) |
 | `j` | 0 | number of parallel workers (default uses all cores) |
 | `r` | 256 | resize large input images to this size before processing |
 | `s` | 1024 | output image size |
@@ -45,6 +45,26 @@ using
 
 try it yourself for more.
 
+
+## Differences
+
+### Output Difference
+
+All the graphs supported by primitive are implemented, and the output of all graphs (except the bezier curves) is basically the same.
+
+The original primitive version of bezier curves supports line thickness adjustment, which is not possible in purr. But the result is still not bad.
+
+### Usage Difference
+
+The key options and parameters of purr are the same as primitive, and in most cases you can just replace primitive with purr.
+
+The rest of the parameters not listed above have not been implemented yet(these parameters will be supported in the future)
+
+### Performance Difference
+
+All types of graphical fits are faster than primitive on my computer. See the next section for more specific data. 
+
+One possible factor is that in my implementation, the "next-step" buffer is skiped, by modified the diff function. It costs less comapring to copy the current buffer, update it then read it.
 
 ## About Performance
 

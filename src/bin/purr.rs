@@ -37,7 +37,7 @@ fn main() {
         .arg(
             Arg::with_name("mode")
                 .short("m")
-                .help("mode: 0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse (default 1)")
+                .help("mode: 0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse 8=polygon(default 1)")
                 .takes_value(true),
         )
         .arg(
