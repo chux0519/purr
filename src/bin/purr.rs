@@ -100,6 +100,10 @@ fn main() {
             shape_number,
             thread_number,
         )),
+        8 => Box::new(PurrMultiThreadRunner::<Polygon>::new(
+            shape_number,
+            thread_number,
+        )),
         _ => {
             eprintln!("unsupported shape {}", shape);
             unreachable!()
