@@ -127,7 +127,7 @@ impl Shape for Quadratic {
         let attr = attr.replace("fill", "stroke");
         format!(
             "<path {} fill=\"none\" d=\"M {} {} Q {} {}, {} {}\" stroke-width=\"{}\" />",
-            attr, self.p0.x, self.p0.y, self.p1.x, self.p1.y, self.p2.x, self.p2.y, 1.0
+            attr, self.p0.x, self.p0.y, self.p1.x, self.p1.y, self.p2.x, self.p2.y, 0.5
         )
     }
 }
