@@ -272,8 +272,8 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                     for (i, frame_str) in frames.iter().enumerate() {
                         println!("exporting {} frame", i + 1);
                         let svg = nsvg::parse_str(frame_str, nsvg::Units::Pixel, 96.0).unwrap();
-                        let scale = 2.0;
-                        let (width, height, mut raw) = svg.rasterize_to_raw_rgba(scale).unwrap();
+                        let (width, height, mut raw) =
+                            svg.rasterize_to_raw_rgba(model.context.scale).unwrap();
                         // let img = image::RgbaImage::from_raw(width, height, raw).unwrap();
                         let frame = Frame::from_rgba(width as u16, height as u16, &mut raw);
                         encoder.write_frame(&frame).unwrap();
