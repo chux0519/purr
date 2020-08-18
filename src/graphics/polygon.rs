@@ -16,10 +16,34 @@ pub struct Polygon {
 
 impl Polygon {
     pub fn clockwise(&mut self) {
-        // TODO:
-        // Theoretically it is necessary to ensure that the point is clockwise,
-        // which is not implemented here at the moment,
-        // since the impact is not very significant
+        // find centroid
+        let c_x: i32 = self.points.iter().map(|p| p.x).sum::<i32>() / 4;
+        let c_y: i32 = self.points.iter().map(|p| p.y).sum::<i32>() / 4;
+
+        self.points.sort_by(|a, b| {
+            if a.x - c_x >= 0 && b.x - c_x < 0 {
+                return std::cmp::Ordering::Greater;
+            }
+            if a.x - c_x < 0 && b.x - c_x >= 0 {
+                return std::cmp::Ordering::Less;
+            }
+            if a.x - c_x == 0 && b.x - c_x == 0 {
+                if a.y - c_y >= 0 || b.y - c_y >= 0 {
+                    return a.y.cmp(&b.y);
+                }
+                return b.y.cmp(&a.y);
+            }
+            let det = (a.x - c_x) * (b.y - c_y) - (b.x - c_x) * (a.y - c_y);
+            if det < 0 {
+                return std::cmp::Ordering::Greater;
+            }
+            if det > 0 {
+                return std::cmp::Ordering::Less;
+            }
+            let d1: i32 = (a.x - c_x) * (a.x - c_x) + (a.y - c_y) * (a.y - c_y);
+            let d2 = (b.x - c_x) * (b.x - c_x) + (b.y - c_y) * (b.y - c_y);
+            d1.cmp(&d2)
+        });
     }
 }
 
