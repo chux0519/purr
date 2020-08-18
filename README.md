@@ -72,9 +72,9 @@ This program is CPU intensive, it does all rendering in memory.
 
 Purr is faster than the original implementation.
 
-Benchmark using `-n 100 -m {0-5}`, see the results below.
+Benchmark using `-n 100 -m {0-8}`, see the results below.
 
-> hyperfine --parameter-scan m 0 5 -D 1 './target/release/purr -i ./assets/input.png -o assets/purr.{m}.png -n 100 -m {m}' '~/go/bin/primitive -i ./assets/input.png -o assets/primitive.{m}.png -n 100 -m {m}' --export-json benchmark.json
+> hyperfine --parameter-scan m 0 8 -D 1 './target/release/purr -i ./assets/input.png -o assets/purr.{m}.png -n 100 -m {m}' '~/go/bin/primitive -i ./assets/input.png -o assets/primitive.{m}.png -n 100 -m {m}' --export-json benchmark.json
 
 
 | Command | Mode | Mean [s] | Min [s] | Max [s] | result |
@@ -91,4 +91,10 @@ Benchmark using `-n 100 -m {0-5}`, see the results below.
 |primitive|circle| 17.375 ± 0.187|17.156|17.760| ![](./assets/primitive.4.png)|
 |purr|rotatedrect| 8.045 ± 0.081|7.938|8.220| ![](./assets/purr.5.png)|
 |primitive|rotatedrect| 9.181 ± 0.154|8.922|9.496| ![](./assets/primitive.5.png)|
+|purr|beziers| 3.050 ± 0.127|2.815|3.223| ![](./assets/purr.6.png)|
+|primitive|beziers| 11.951 ± 0.173|11.563|12.114| ![](./assets/primitive.6.png)|
+|purr|rotatedellipse| 12.282 ± 0.166|11.942|12.496| ![](./assets/purr.7.png)|
+|primitive|rotatedellipse| 27.795 ± 0.401|27.273|28.694| ![](./assets/primitive.7.png)|
+|purr|polygon| 8.355 ± 0.219|7.988|8.748| ![](./assets/purr.8.png)|
+|primitive|polygon| 15.995 ± 0.275|15.426|16.431| ![](./assets/primitive.8.png)|
 
