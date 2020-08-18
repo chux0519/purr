@@ -1,5 +1,8 @@
 use crate::core::PurrShape;
-use crate::graphics::{Circle, Ellipse, Rectangle, RotatedRectangle, Scanline, Shape, Triangle};
+use crate::graphics::{
+    Circle, Ellipse, Polygon, Quadratic, Rectangle, RotatedEllipse, RotatedRectangle, Scanline,
+    Shape, Triangle,
+};
 use crate::{Rgba, RgbaImage};
 use rand::{Rng, RngCore, SeedableRng};
 
@@ -10,6 +13,9 @@ pub enum Combo {
     Rectangle(Rectangle),
     RotatedRectangle(RotatedRectangle),
     Circle(Circle),
+    Quadratic(Quadratic),
+    RotatedEllipse(RotatedEllipse),
+    Polygon(Polygon),
 }
 
 impl Default for Combo {
@@ -20,12 +26,15 @@ impl Default for Combo {
 
 impl Shape for Combo {
     fn random<T: SeedableRng + RngCore>(w: u32, h: u32, rng: &mut T) -> Self {
-        match rng.gen_range(0, 5) {
+        match rng.gen_range(0, 8) {
             0 => Combo::Triangle(Triangle::random(w, h, rng)),
             1 => Combo::Ellipse(Ellipse::random(w, h, rng)),
             2 => Combo::Rectangle(Rectangle::random(w, h, rng)),
             3 => Combo::RotatedRectangle(RotatedRectangle::random(w, h, rng)),
             4 => Combo::Circle(Circle::random(w, h, rng)),
+            5 => Combo::Quadratic(Quadratic::random(w, h, rng)),
+            6 => Combo::RotatedEllipse(RotatedEllipse::random(w, h, rng)),
+            7 => Combo::Polygon(Polygon::random(w, h, rng)),
             _ => unreachable!(),
         }
     }
@@ -37,6 +46,9 @@ impl Shape for Combo {
             Combo::Rectangle(s) => s.mutate(w, h, rng),
             Combo::RotatedRectangle(s) => s.mutate(w, h, rng),
             Combo::Circle(s) => s.mutate(w, h, rng),
+            Combo::Quadratic(s) => s.mutate(w, h, rng),
+            Combo::RotatedEllipse(s) => s.mutate(w, h, rng),
+            Combo::Polygon(s) => s.mutate(w, h, rng),
         }
     }
     fn rasterize(&self, w: u32, h: u32) -> Vec<Scanline> {
@@ -46,6 +58,9 @@ impl Shape for Combo {
             Combo::Rectangle(s) => s.rasterize(w, h),
             Combo::RotatedRectangle(s) => s.rasterize(w, h),
             Combo::Circle(s) => s.rasterize(w, h),
+            Combo::Quadratic(s) => s.rasterize(w, h),
+            Combo::RotatedEllipse(s) => s.rasterize(w, h),
+            Combo::Polygon(s) => s.rasterize(w, h),
         }
     }
     fn draw(&self, img: &mut RgbaImage, color: &Rgba<u8>) {
@@ -55,6 +70,9 @@ impl Shape for Combo {
             Combo::Rectangle(s) => s.draw(img, color),
             Combo::RotatedRectangle(s) => s.draw(img, color),
             Combo::Circle(s) => s.draw(img, color),
+            Combo::Quadratic(s) => s.draw(img, color),
+            Combo::RotatedEllipse(s) => s.draw(img, color),
+            Combo::Polygon(s) => s.draw(img, color),
         }
     }
 
@@ -65,6 +83,9 @@ impl Shape for Combo {
             Combo::Rectangle(s) => s.to_svg(attr),
             Combo::RotatedRectangle(s) => s.to_svg(attr),
             Combo::Circle(s) => s.to_svg(attr),
+            Combo::Quadratic(s) => s.to_svg(attr),
+            Combo::RotatedEllipse(s) => s.to_svg(attr),
+            Combo::Polygon(s) => s.to_svg(attr),
         }
     }
 }
