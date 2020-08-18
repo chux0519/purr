@@ -92,11 +92,3 @@ Benchmark using `-n 100 -m {0-5}`, see the results below.
 |purr|rotatedrect| 8.045 ± 0.081|7.938|8.220| ![](./assets/purr.5.png)|
 |primitive|rotatedrect| 9.181 ± 0.154|8.922|9.496| ![](./assets/primitive.5.png)|
 
-
-## TODO
-
-- [ ] More primitives
-  - [x] beziers
-  - [X] rotated ellipse
-  - [ ] polygon
-
