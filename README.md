@@ -79,8 +79,8 @@ Benchmark using `-n 100 -m {0-8}`, see the results below.
 
 | Command | Mode | Mean [s] | Min [s] | Max [s] | result |
 |:---|---|---:|---:|---:|---:|
-|purr|combo| 9.980 ± 0.254|9.503|10.381| ![](./assets/purr.0.png)|
-|primitive|combo| 14.564 ± 0.328|14.154|15.036| ![](./assets/primitive.0.png)|
+|purr|combo| 10.256 ± 0.385|9.202|10.467| ![](./assets/purr.0.png)|
+|primitive|combo| 15.068 ± 0.213|14.785|15.405| ![](./assets/primitive.0.png)|
 |purr|triangle| 6.927 ± 0.201|6.510|7.136| ![](./assets/purr.1.png)|
 |primitive|triangle| 10.577 ± 0.266|10.109|10.879| ![](./assets/primitive.1.png)|
 |purr|rect| 6.224 ± 0.087|6.132|6.380| ![](./assets/purr.2.png)|
