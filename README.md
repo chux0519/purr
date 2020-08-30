@@ -4,12 +4,6 @@ It's a rust implementation of fogleman's [primitive](https://github.com/fogleman
 
 Created at Rusty Days Hackathon, 2020.
 
-> The topic is "Emergent phenomena"("Amaze us with simple rules").
-
-By randomly generating primitive(triangle/ellipse/etc.), to fit a given picture.
-
-The rule is really simple, like hill climbing, we randomly genrate some primitives, then try to find the shortest path to the target image.
-
 For more details about the algorithm, check this out: [Hill Climbing](https://en.wikipedia.org/wiki/Hill_climbing)
 
 ## Feature
@@ -17,6 +11,12 @@ For more details about the algorithm, check this out: [Hill Climbing](https://en
 Simple rule, powerful result
 
 ### Usage
+
+Use this as lib
+
+> purrmitive = "\*"
+
+or as cli
 
 > cargo run --release --features=cli --bin=purr  --  -i ./assets/input.png -o output.gif -n 100
 
@@ -31,6 +31,7 @@ most `primitive` flags are supported.
 | `j` | 0 | number of parallel workers (default uses all cores) |
 | `r` | 256 | resize large input images to this size before processing |
 | `s` | 1024 | output image size |
+
 
 ## Example
 

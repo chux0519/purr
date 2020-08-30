@@ -1,12 +1,12 @@
 [package]
-name = "purr"
+name = "purrmitive"
 version = "0.1.0"
 authors = ["chux0519 <chuxdesign@hotmail.com>"]
 edition = "2018"
 license-file = "LICENSE"
 description = "Reproducing images with geometric primitives."
 homepage = "https://github.com/chux0519/purr"
-documentation = "https://docs.rs/purr"
+documentation = "https://docs.rs/purrmitive"
 repository = "https://github.com/chux0519/purr"
 readme = "README.md"
 
