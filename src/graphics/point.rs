@@ -33,4 +33,3 @@ impl ops::Sub for Point {
         }
     }
 }
-

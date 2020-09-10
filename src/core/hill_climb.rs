@@ -39,7 +39,7 @@ pub fn hill_climb<T: PurrShape>(
         }
         cur_state.shape.mutate(ctx.w, ctx.h, &mut ctx.rng);
         let lines = cur_state.shape.rasterize(ctx.w, ctx.h);
-        let alpha = clamp(ctx.rng.gen_range(-10, 11) as i32 + 128, 1, 255);
+        let alpha = clamp(ctx.rng.gen_range(-10, 11) as i32 + ctx.alpha as i32, 1, 255);
         if lines.is_empty() {
             cur_state = state;
             continue;
@@ -84,7 +84,7 @@ pub fn random_step<T: PurrShape>(ctx: &mut PurrContext) -> PurrState<T> {
     }
     assert!(!lines.is_empty());
     let cur = ctx.current_img.read().unwrap();
-    let color = compute_color(&ctx.origin_img, &cur, &lines, 128);
+    let color = compute_color(&ctx.origin_img, &cur, &lines, ctx.alpha);
     let score = diff_partial_with_color(&ctx.origin_img, &cur, &lines, ctx.score, color);
 
     PurrState {

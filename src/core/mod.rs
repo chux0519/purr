@@ -52,10 +52,11 @@ pub struct PurrContext {
     pub rng: SmallRng,
     pub score: f64,
     pub bg: Rgba<u8>, // TODO: heatmap pos
+    pub alpha: u8,
 }
 
 impl PurrContext {
-    pub fn new<P: AsRef<Path>>(input: P, input_size: u32, output_size: u32) -> Self {
+    pub fn new<P: AsRef<Path>>(input: P, input_size: u32, output_size: u32, alpha: u8) -> Self {
         let img = image::open(&input).unwrap();
         let (width, height) = img.dimensions();
         let mut w;
@@ -115,6 +116,7 @@ impl PurrContext {
             rng: SmallRng::from_entropy(),
             score,
             bg: color,
+            alpha,
         }
     }
 }

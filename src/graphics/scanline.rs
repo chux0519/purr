@@ -25,4 +25,3 @@ impl Scanline {
         self.x2 = clamp(self.x2, 0, w - 1);
     }
 }
-

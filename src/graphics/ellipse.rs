@@ -197,4 +197,3 @@ impl Shape for RotatedEllipse {
 }
 
 impl PurrShape for RotatedEllipse {}
-

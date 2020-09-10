@@ -1,6 +1,6 @@
 use clap::{App, Arg};
-use purr::core::*;
-use purr::graphics::*;
+use purrmitive::core::*;
+use purrmitive::graphics::*;
 
 fn main() {
     let matches = App::new("Purr")
@@ -52,6 +52,12 @@ fn main() {
                 .help("output size")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("alpha")
+                .short("a")
+                .help("alpha value")
+                .takes_value(true),
+        )
         .get_matches();
     let input = matches.value_of("input").unwrap();
     let output = matches.value_of("output").unwrap();
@@ -64,8 +70,9 @@ fn main() {
         .unwrap();
     let input_size = matches.value_of("resize").unwrap_or("256").parse().unwrap();
     let output_size = matches.value_of("size").unwrap_or("1024").parse().unwrap();
+    let alpha = matches.value_of("alpha").unwrap_or("128").parse().unwrap();
 
-    let model_ctx = PurrContext::new(input, input_size, output_size);
+    let model_ctx = PurrContext::new(input, input_size, output_size, alpha);
     let mut model_hillclimb = PurrHillClimbModel::new(model_ctx, 1000, 16, 100);
     let mut model_runner: Box<dyn PurrModelRunner<M = PurrHillClimbModel>> = match shape {
         0 => Box::new(PurrMultiThreadRunner::<Combo>::new(
