@@ -66,7 +66,13 @@ fn main() {
             Arg::with_name("v")
                 .short("v")
                 .multiple(true)
-                .help("Sets the level of verbosity, v/vv/vvv"),
+                .help("the level of verbosity, v/vv/vvv"),
+        )
+        .arg(
+            Arg::with_name("background")
+                .short("b")
+                .help("starting background color (hex)")
+                .takes_value(true),
         )
         .get_matches();
     let mut logger_builder = Builder::new();
@@ -82,6 +88,8 @@ fn main() {
     let input_size = matches.value_of("resize").unwrap_or("256").parse().unwrap();
     let output_size = matches.value_of("size").unwrap_or("1024").parse().unwrap();
     let alpha = matches.value_of("alpha").unwrap_or("128").parse().unwrap();
+    let bg = matches.value_of("background").unwrap_or("");
+
     let level = match matches.occurrences_of("v") {
         0 => LevelFilter::Error,
         1 => LevelFilter::Info,
@@ -91,7 +99,7 @@ fn main() {
     logger_builder.filter_level(level);
     logger_builder.init();
 
-    let model_ctx = PurrContext::new(input, input_size, output_size, alpha);
+    let model_ctx = PurrContext::new(input, input_size, output_size, alpha, parse_hex_color(bg));
     let mut model_hillclimb = PurrHillClimbModel::new(model_ctx, 1000, 16, 100);
     let mut model_runner: Box<dyn PurrModelRunner<M = PurrHillClimbModel>> = match shape {
         0 => Box::new(PurrMultiThreadRunner::<Combo>::new(

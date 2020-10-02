@@ -67,7 +67,13 @@ pub struct PurrContext {
 }
 
 impl PurrContext {
-    pub fn new<P: AsRef<Path>>(input: P, input_size: u32, output_size: u32, alpha: u8) -> Self {
+    pub fn new<P: AsRef<Path>>(
+        input: P,
+        input_size: u32,
+        output_size: u32,
+        alpha: u8,
+        bg: Option<Rgba<u8>>,
+    ) -> Self {
         let img = image::open(&input).unwrap();
         let (width, height) = img.dimensions();
         let mut w;
@@ -107,7 +113,12 @@ impl PurrContext {
 
         // init current_img
         let mut current_img = image::ImageBuffer::new(w, h);
-        let color = average_color(&origin_img);
+
+        let color = match bg {
+            Some(c) => c,
+            None => average_color(&origin_img),
+        };
+
         for y in 0..h {
             for x in 0..w {
                 let pixel: &mut Rgba<u8> = current_img.get_pixel_mut(x as u32, y as u32);
