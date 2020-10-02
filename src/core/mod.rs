@@ -13,6 +13,7 @@ use crossbeam_channel::{Receiver, Sender};
 use gif::{Encoder, Frame, Repeat, SetParameter};
 use image::imageops::FilterType;
 use image::GenericImageView;
+use log::{debug, info};
 use nsvg;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
@@ -36,6 +37,16 @@ impl<T: PurrShape> Default for PurrState<T> {
     fn default() -> Self {
         PurrState {
             score: std::f64::MAX,
+            color: Rgba([0, 0, 0, 0]),
+            shape: T::default(),
+        }
+    }
+}
+
+impl<T: PurrShape> PurrState<T> {
+    fn new(score: f64) -> Self {
+        PurrState {
+            score,
             color: Rgba([0, 0, 0, 0]),
             shape: T::default(),
         }
@@ -70,7 +81,7 @@ impl PurrContext {
             let (new_w, new_h) = img_rgba.dimensions();
             w = new_w;
             h = new_h;
-            println!(
+            debug!(
                 "image too large, resize from {}x{} to {}x{}",
                 width, height, w, h
             );
@@ -83,7 +94,7 @@ impl PurrContext {
             let (new_w, new_h) = img_rgba.dimensions();
             w = new_w;
             h = new_h;
-            println!(
+            debug!(
                 "image too large, resize from {}x{} to {}x{}",
                 width, height, w, h
             );
@@ -217,7 +228,7 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                 }
             }
 
-            println!(
+            info!(
                 "Batch: {}, score {} -> score {}",
                 batch + 1,
                 model.context.score,
@@ -241,7 +252,7 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
 
         pool.join();
 
-        println!("jobs done, now export to {}", output);
+        info!("done, now export to {}", output);
 
         // save result
         {
@@ -272,7 +283,7 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                     encoder.set(Repeat::Infinite).unwrap();
 
                     for (i, frame_str) in frames.iter().enumerate() {
-                        println!("exporting {} frame", i + 1);
+                        debug!("exporting {} frame", i + 1);
                         let svg = nsvg::parse_str(frame_str, nsvg::Units::Pixel, 96.0).unwrap();
                         let (width, height, mut raw) =
                             svg.rasterize_to_raw_rgba(model.context.scale).unwrap();
@@ -285,7 +296,7 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                     let img = rasterize_svg(&svg_str, model.context.scale);
                     let final_res = format!("{}.png", output);
                     img.save(&final_res).unwrap();
-                    println!("final result saved to {}", final_res);
+                    debug!("gif result saved to {}", final_res);
                 }
                 _ => {
                     // generate svg, then rasterize it

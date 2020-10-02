@@ -2,6 +2,10 @@ use clap::{App, Arg};
 use purrmitive::core::*;
 use purrmitive::graphics::*;
 
+use env_logger::Builder;
+use log::error;
+use log::LevelFilter;
+
 fn main() {
     let matches = App::new("Purr")
         .version("0.0")
@@ -58,7 +62,14 @@ fn main() {
                 .help("alpha value")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("v")
+                .short("v")
+                .multiple(true)
+                .help("Sets the level of verbosity, v/vv/vvv"),
+        )
         .get_matches();
+    let mut logger_builder = Builder::new();
     let input = matches.value_of("input").unwrap();
     let output = matches.value_of("output").unwrap();
     let shape_number = matches.value_of("number").unwrap().parse().unwrap();
@@ -71,6 +82,14 @@ fn main() {
     let input_size = matches.value_of("resize").unwrap_or("256").parse().unwrap();
     let output_size = matches.value_of("size").unwrap_or("1024").parse().unwrap();
     let alpha = matches.value_of("alpha").unwrap_or("128").parse().unwrap();
+    let level = match matches.occurrences_of("v") {
+        0 => LevelFilter::Error,
+        1 => LevelFilter::Info,
+        2 => LevelFilter::Debug,
+        3 | _ => LevelFilter::Trace,
+    };
+    logger_builder.filter_level(level);
+    logger_builder.init();
 
     let model_ctx = PurrContext::new(input, input_size, output_size, alpha);
     let mut model_hillclimb = PurrHillClimbModel::new(model_ctx, 1000, 16, 100);
@@ -112,7 +131,7 @@ fn main() {
             thread_number,
         )),
         _ => {
-            eprintln!("unsupported shape {}", shape);
+            error!("unsupported shape {}", shape);
             unreachable!()
         }
     };
