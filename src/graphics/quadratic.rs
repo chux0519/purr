@@ -186,4 +186,3 @@ fn rasterize_quadratic(q: &Quadratic, w: u32, h: u32) -> Vec<Scanline> {
 }
 
 impl PurrShape for Quadratic {}
-

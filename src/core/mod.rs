@@ -13,6 +13,7 @@ use crossbeam_channel::{Receiver, Sender};
 use gif::{Encoder, Frame, Repeat, SetParameter};
 use image::imageops::FilterType;
 use image::GenericImageView;
+use log::{debug, info};
 use nsvg;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
@@ -42,6 +43,16 @@ impl<T: PurrShape> Default for PurrState<T> {
     }
 }
 
+impl<T: PurrShape> PurrState<T> {
+    fn new(score: f64) -> Self {
+        PurrState {
+            score,
+            color: Rgba([0, 0, 0, 0]),
+            shape: T::default(),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct PurrContext {
     pub w: u32,
@@ -52,10 +63,17 @@ pub struct PurrContext {
     pub rng: SmallRng,
     pub score: f64,
     pub bg: Rgba<u8>, // TODO: heatmap pos
+    pub alpha: u8,
 }
 
 impl PurrContext {
-    pub fn new<P: AsRef<Path>>(input: P, input_size: u32, output_size: u32) -> Self {
+    pub fn new<P: AsRef<Path>>(
+        input: P,
+        input_size: u32,
+        output_size: u32,
+        alpha: u8,
+        bg: Option<Rgba<u8>>,
+    ) -> Self {
         let img = image::open(&input).unwrap();
         let (width, height) = img.dimensions();
         let mut w;
@@ -69,7 +87,7 @@ impl PurrContext {
             let (new_w, new_h) = img_rgba.dimensions();
             w = new_w;
             h = new_h;
-            println!(
+            debug!(
                 "image too large, resize from {}x{} to {}x{}",
                 width, height, w, h
             );
@@ -82,7 +100,7 @@ impl PurrContext {
             let (new_w, new_h) = img_rgba.dimensions();
             w = new_w;
             h = new_h;
-            println!(
+            debug!(
                 "image too large, resize from {}x{} to {}x{}",
                 width, height, w, h
             );
@@ -95,7 +113,12 @@ impl PurrContext {
 
         // init current_img
         let mut current_img = image::ImageBuffer::new(w, h);
-        let color = average_color(&origin_img);
+
+        let color = match bg {
+            Some(c) => c,
+            None => average_color(&origin_img),
+        };
+
         for y in 0..h {
             for x in 0..w {
                 let pixel: &mut Rgba<u8> = current_img.get_pixel_mut(x as u32, y as u32);
@@ -115,6 +138,7 @@ impl PurrContext {
             rng: SmallRng::from_entropy(),
             score,
             bg: color,
+            alpha,
         }
     }
 }
@@ -215,7 +239,7 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                 }
             }
 
-            println!(
+            info!(
                 "Batch: {}, score {} -> score {}",
                 batch + 1,
                 model.context.score,
@@ -239,7 +263,7 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
 
         pool.join();
 
-        println!("jobs done, now export to {}", output);
+        info!("done, now export to {}", output);
 
         // save result
         {
@@ -270,7 +294,7 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                     encoder.set(Repeat::Infinite).unwrap();
 
                     for (i, frame_str) in frames.iter().enumerate() {
-                        println!("exporting {} frame", i + 1);
+                        debug!("exporting {} frame", i + 1);
                         let svg = nsvg::parse_str(frame_str, nsvg::Units::Pixel, 96.0).unwrap();
                         let (width, height, mut raw) =
                             svg.rasterize_to_raw_rgba(model.context.scale).unwrap();
@@ -283,7 +307,7 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                     let img = rasterize_svg(&svg_str, model.context.scale);
                     let final_res = format!("{}.png", output);
                     img.save(&final_res).unwrap();
-                    println!("final result saved to {}", final_res);
+                    debug!("gif result saved to {}", final_res);
                 }
                 _ => {
                     // generate svg, then rasterize it

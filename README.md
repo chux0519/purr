@@ -20,18 +20,29 @@ or as cli
 
 > cargo run --release --features=cli --bin=purr  --  -i ./assets/input.png -o output.gif -n 100
 
-most `primitive` flags are supported.
+most `primitive` flags are supported, it should be a dropin replacement in most cases.
 
-| Flag | Default | Description |
-| --- | --- | --- |
-| `i` | n/a | input file |
-| `o` | n/a | output file |
-| `n` | n/a | number of shapes |
-| `m` | 1 | mode: 0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse 8=polygon(default 1) |
-| `j` | 0 | number of parallel workers (default uses all cores) |
-| `r` | 256 | resize large input images to this size before processing |
-| `s` | 1024 | output image size |
+```
+USAGE:
+    purr [FLAGS] [OPTIONS] -i <input> -n <number> -o <output>
 
+FLAGS:
+    -h, --help       Prints help information
+    -v               the level of verbosity, v/vv/vvv
+    -V, --version    Prints version information
+
+OPTIONS:
+    -a <alpha>             alpha value
+    -b <background>        starting background color (hex)
+    -i <input>             input image
+    -m <mode>              mode: 0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse
+                           8=polygon(default 1)
+    -n <number>            number of shapes
+    -o <output>            output image
+    -r <resize>            input size
+    -s <size>              output size
+    -j <thread>            numebr of threads
+```
 
 ## Example
 

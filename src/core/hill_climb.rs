@@ -2,6 +2,7 @@ use crate::clamp;
 use crate::core::PurrShape;
 use crate::core::{compute_color, diff_partial_with_color};
 use crate::core::{PurrContext, PurrState};
+use log::debug;
 use rand::Rng;
 
 pub fn best_hill_climb<T: PurrShape>(
@@ -10,11 +11,19 @@ pub fn best_hill_climb<T: PurrShape>(
     m: u32,
     age: u32,
 ) -> PurrState<T> {
-    let mut best_state = PurrState::default();
-    for _ in 0..m {
+    let mut best_state = PurrState::new(ctx.score);
+    for i in 0..m {
         let best_rand_state = best_random_step(ctx, n);
         let climb_state = hill_climb(ctx, best_rand_state, age);
+        debug!(
+            "climb No.{}: {} -> {}",
+            i, best_rand_state.score, climb_state.score
+        );
         if climb_state.score < best_state.score {
+            debug!(
+                "found better state in climb No.{}: {} -> {}",
+                i, best_state.score, climb_state.score
+            );
             best_state = climb_state;
         }
     }
@@ -39,7 +48,7 @@ pub fn hill_climb<T: PurrShape>(
         }
         cur_state.shape.mutate(ctx.w, ctx.h, &mut ctx.rng);
         let lines = cur_state.shape.rasterize(ctx.w, ctx.h);
-        let alpha = clamp(ctx.rng.gen_range(-10, 11) as i32 + 128, 1, 255);
+        let alpha = clamp(ctx.rng.gen_range(-10, 11) as i32 + ctx.alpha as i32, 1, 255);
         if lines.is_empty() {
             cur_state = state;
             continue;
@@ -84,7 +93,7 @@ pub fn random_step<T: PurrShape>(ctx: &mut PurrContext) -> PurrState<T> {
     }
     assert!(!lines.is_empty());
     let cur = ctx.current_img.read().unwrap();
-    let color = compute_color(&ctx.origin_img, &cur, &lines, 128);
+    let color = compute_color(&ctx.origin_img, &cur, &lines, ctx.alpha);
     let score = diff_partial_with_color(&ctx.origin_img, &cur, &lines, ctx.score, color);
 
     PurrState {

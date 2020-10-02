@@ -3,6 +3,8 @@ use crate::graphics::Scanline;
 use crate::{alpha_compose, clamp};
 use crate::{Rgba, RgbaImage};
 
+use log::error;
+
 pub fn average_color(img: &RgbaImage) -> Rgba<u8> {
     let (w, h) = img.dimensions();
     let mut r = 0;
@@ -188,6 +190,55 @@ pub fn diff_partial_with_color(
     ((total as f64) / (w * h * 4) as f64).sqrt() / 255.0
 }
 
+pub fn parse_hex_color(hex: &str) -> Option<Rgba<u8>> {
+    let h = hex.trim_start_matches("#");
+    let mut r = 0;
+    let mut g = 0;
+    let mut b = 0;
+    let mut a = 255;
+
+    match h.len() {
+        0 => {
+            return None;
+        }
+        3 => {
+            r = u8::from_str_radix(h.get(0..1).unwrap(), 16).unwrap();
+            r = r << 4 | r;
+            g = u8::from_str_radix(h.get(1..2).unwrap(), 16).unwrap();
+            g = g << 4 | g;
+            b = u8::from_str_radix(h.get(2..3).unwrap(), 16).unwrap();
+            b = b << 4 | b;
+        }
+        4 => {
+            r = u8::from_str_radix(h.get(0..1).unwrap(), 16).unwrap();
+            r = r << 4 | r;
+            g = u8::from_str_radix(h.get(1..2).unwrap(), 16).unwrap();
+            g = g << 4 | g;
+            b = u8::from_str_radix(h.get(2..3).unwrap(), 16).unwrap();
+            b = b << 4 | b;
+            a = u8::from_str_radix(h.get(3..4).unwrap(), 16).unwrap();
+            a = a << 4 | a;
+        }
+        6 => {
+            r = u8::from_str_radix(h.get(0..2).unwrap(), 16).unwrap();
+            g = u8::from_str_radix(h.get(2..4).unwrap(), 16).unwrap();
+            b = u8::from_str_radix(h.get(4..6).unwrap(), 16).unwrap();
+        }
+        8 => {
+            r = u8::from_str_radix(h.get(0..2).unwrap(), 16).unwrap();
+            g = u8::from_str_radix(h.get(2..4).unwrap(), 16).unwrap();
+            b = u8::from_str_radix(h.get(4..6).unwrap(), 16).unwrap();
+            a = u8::from_str_radix(h.get(6..8).unwrap(), 16).unwrap();
+        }
+        _ => {
+            error!("invalid hex color: {}", hex);
+            unreachable!();
+        }
+    }
+
+    Some(Rgba([r, g, b, a]))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -261,5 +312,19 @@ mod tests {
         let score2 = diff_full(&img, &img);
         assert_eq!(score1 > 0.0, true);
         assert_eq!(score2, 0.0);
+    }
+
+    #[test]
+    fn test_parse_hex_color() {
+        let color1 = "#fff";
+        let color2 = "#ffff";
+        let color3 = "#ffffff";
+        let color4 = "#ffffffff";
+        let result = Some(Rgba([255, 255, 255, 255]));
+
+        assert_eq!(parse_hex_color(color1), result);
+        assert_eq!(parse_hex_color(color2), result);
+        assert_eq!(parse_hex_color(color3), result);
+        assert_eq!(parse_hex_color(color4), result);
     }
 }
