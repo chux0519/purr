@@ -8,9 +8,9 @@ use log::LevelFilter;
 
 fn main() {
     let matches = App::new("Purr")
-        .version("0.0")
+        .version("0.0.0")
         .author("Yongsheng Xu")
-        .about("Rusty Days Hackathon Project")
+        .about("Reproducing images with geometric primitives.")
         .arg(
             Arg::with_name("input")
                 .short("i")
