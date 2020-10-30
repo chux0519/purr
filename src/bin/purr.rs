@@ -1,4 +1,4 @@
-use clap::{App, Arg};
+use clap::{App, Arg, crate_version};
 use purrmitive::core::*;
 use purrmitive::graphics::*;
 
@@ -8,7 +8,7 @@ use log::LevelFilter;
 
 fn main() {
     let matches = App::new("Purr")
-        .version("0.0.0")
+        .version(crate_version!())
         .author("Yongsheng Xu")
         .about("Reproducing images with geometric primitives.")
         .arg(
