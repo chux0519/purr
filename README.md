@@ -12,11 +12,15 @@ Simple rule, powerful result
 
 ### Usage
 
-Use this as lib
+Use `purrmitive` as lib
 
 > purrmitive = "\*"
 
-or as cli
+or install `purr` as binary
+
+> cargo install --bin purr --features="cli" purrmitive
+
+or
 
 > cargo run --release --features=cli --bin=purr  --  -i ./assets/input.png -o output.gif -n 100
 
