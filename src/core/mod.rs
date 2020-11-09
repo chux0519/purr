@@ -10,6 +10,7 @@ use crate::graphics::*;
 use crate::{Rgba, RgbaImage};
 use crossbeam_channel::bounded;
 use crossbeam_channel::{Receiver, Sender};
+use dyn_fmt::AsStrFormatExt;
 use gif::{Encoder, Frame, Repeat, SetParameter};
 use image::imageops::FilterType;
 use image::GenericImageView;
@@ -50,6 +51,16 @@ impl<T: PurrShape> PurrState<T> {
             color: Rgba([0, 0, 0, 0]),
             shape: T::default(),
         }
+    }
+    fn to_svg(&self) -> String {
+        let attr = format!(
+            "fill=\"#{:02X}{:02X}{:02X}\" fill-opacity=\"{}\"",
+            self.color.0[0],
+            self.color.0[1],
+            self.color.0[2],
+            self.color.0[3] as f64 / 255.0
+        );
+        self.shape.to_svg(&attr)
     }
 }
 
@@ -184,9 +195,9 @@ pub struct PurrMultiThreadRunner<T: PurrShape> {
 
 pub trait PurrModelRunner {
     type M;
-    fn run(&mut self, model: &mut Self::M, output: &str);
-    fn to_svg(&self, context: &PurrContext) -> String;
-    fn to_frames(&self, context: &PurrContext) -> Vec<String>;
+    fn run(&mut self, model: &mut Self::M);
+    fn get_svg(&self, context: &PurrContext, idx: usize) -> String;
+    fn save(&self, context: &PurrContext, output: &str);
 }
 
 impl<T: PurrShape> Default for PurrMultiThreadRunner<T> {
@@ -203,7 +214,7 @@ impl<T: PurrShape> Default for PurrMultiThreadRunner<T> {
 
 impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
     type M = PurrHillClimbModel;
-    fn run(&mut self, model: &mut Self::M, output: &str) {
+    fn run(&mut self, model: &mut Self::M) {
         let pool = ThreadPool::new(self.thread_number as usize);
         // spawn workers
         let mut worker_model_m = model.m / self.thread_number;
@@ -262,65 +273,9 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
         }
 
         pool.join();
-
-        info!("done, now export to {}", output);
-
-        // save result
-        {
-            let suffix = Path::new(output)
-                .extension()
-                .and_then(OsStr::to_str)
-                .unwrap_or("png");
-            match suffix {
-                "svg" => {
-                    let mut out = OpenOptions::new()
-                        .write(true)
-                        .create(true)
-                        .open(output)
-                        .unwrap();
-                    out.write_all(self.to_svg(&model.context).as_bytes())
-                        .unwrap();
-                }
-                "gif" => {
-                    let out = OpenOptions::new()
-                        .write(true)
-                        .create(true)
-                        .open(output)
-                        .unwrap();
-                    let frames = self.to_frames(&model.context);
-                    let mut encoder =
-                        Encoder::new(out, model.context.w as u16, model.context.h as u16, &[0; 0])
-                            .unwrap();
-                    encoder.set(Repeat::Infinite).unwrap();
-
-                    for (i, frame_str) in frames.iter().enumerate() {
-                        debug!("exporting {} frame", i + 1);
-                        let svg = nsvg::parse_str(frame_str, nsvg::Units::Pixel, 96.0).unwrap();
-                        let (width, height, mut raw) =
-                            svg.rasterize_to_raw_rgba(model.context.scale).unwrap();
-                        // let img = image::RgbaImage::from_raw(width, height, raw).unwrap();
-                        let frame = Frame::from_rgba(width as u16, height as u16, &mut raw);
-                        encoder.write_frame(&frame).unwrap();
-                    }
-                    // save final result then
-                    let svg_str = self.to_svg(&model.context);
-                    let img = rasterize_svg(&svg_str, model.context.scale);
-                    let final_res = format!("{}.png", output);
-                    img.save(&final_res).unwrap();
-                    debug!("gif result saved to {}", final_res);
-                }
-                _ => {
-                    // generate svg, then rasterize it
-                    // for anti-aliasing
-                    let svg_str = self.to_svg(&model.context);
-                    let img = rasterize_svg(&svg_str, model.context.scale);
-                    img.save(output).unwrap();
-                }
-            }
-        }
     }
 
-    fn to_svg(&self, context: &PurrContext) -> String {
+    fn get_svg(&self, context: &PurrContext, idx: usize) -> String {
         let mut output = "".to_owned();
         output += &format!(
             "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"{}\" height=\"{}\">",
@@ -332,15 +287,11 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
         );
         output += "<g transform=\"scale(1) translate(0.5 0.5)\">";
 
-        for s in &self.states {
-            let attr = format!(
-                "fill=\"#{:02X}{:02X}{:02X}\" fill-opacity=\"{}\"",
-                s.color.0[0],
-                s.color.0[1],
-                s.color.0[2],
-                s.color.0[3] as f64 / 255.0
-            );
-            output += &s.shape.to_svg(&attr);
+        for i in 0..=idx {
+            if i >= self.states.len() {
+                break;
+            }
+            output += &self.states[i].to_svg();
         }
 
         output += "</g>";
@@ -348,35 +299,72 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
         output
     }
 
-    fn to_frames(&self, context: &PurrContext) -> Vec<String> {
-        let mut frames = Vec::new();
-        let mut head = format!(
-            "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"{}\" height=\"{}\">",
-            context.w, context.h
-        );
-        head += &format!(
-            "<rect x=\"0\" y=\"0\" width=\"{}\" height=\"{}\" fill=\"#{:02X}{:02X}{:02X}\"/>",
-            context.w, context.h, context.bg.0[0], context.bg.0[1], context.bg.0[2]
-        );
-        head += "<g transform=\"scale(1) translate(0.5 0.5)\">";
-        let tail = "</g></svg>";
-        for n in 0..self.shape_number {
-            let mut frame = head.clone();
-            for i in 0..n {
-                let s = &self.states[i as usize];
-                let attr = format!(
-                    "fill=\"#{:02X}{:02X}{:02X}\" fill-opacity=\"{}\"",
-                    s.color.0[0],
-                    s.color.0[1],
-                    s.color.0[2],
-                    s.color.0[3] as f64 / 255.0
-                );
-                frame += &s.shape.to_svg(&attr);
+    fn save(&self, context: &PurrContext, output: &str) {
+        // save result
+        let suffix = Path::new(output)
+            .extension()
+            .and_then(OsStr::to_str)
+            .unwrap_or("png");
+        let should_format = output.find("{").is_some();
+        let save_frames = should_format && suffix != "gif";
+        for i in 0..self.states.len() {
+            let last = i == self.states.len() - 1;
+            if last || save_frames {
+                let outfile = if should_format {
+                    //output.to_string()
+                    output.format(&[i + 1])
+                } else {
+                    output.to_string()
+                };
+                info!("exporting: {}", outfile);
+                match suffix {
+                    "svg" => {
+                        let mut out = OpenOptions::new()
+                            .write(true)
+                            .create(true)
+                            .open(outfile)
+                            .unwrap();
+                        out.write_all(self.get_svg(context, i).as_bytes()).unwrap();
+                    }
+                    "gif" => {
+                        let out = OpenOptions::new()
+                            .write(true)
+                            .create(true)
+                            .open(output)
+                            .unwrap();
+
+                        let mut encoder =
+                            Encoder::new(out, context.w as u16, context.h as u16, &[0; 0]).unwrap();
+                        encoder.set(Repeat::Infinite).unwrap();
+
+                        for n in 0..self.shape_number {
+                            let frame = self.get_svg(context, n as usize);
+                            info!("exporting {} frame", n + 1);
+                            let svg = nsvg::parse_str(&frame, nsvg::Units::Pixel, 96.0).unwrap();
+                            let (width, height, mut raw) =
+                                svg.rasterize_to_raw_rgba(context.scale).unwrap();
+                            // let img = image::RgbaImage::from_raw(width, height, raw).unwrap();
+                            let frame = Frame::from_rgba(width as u16, height as u16, &mut raw);
+                            encoder.write_frame(&frame).unwrap();
+                        }
+
+                        // save final result then
+                        let svg_str = self.get_svg(context, i);
+                        let img = rasterize_svg(&svg_str, context.scale);
+                        let final_res = format!("{}.png", output);
+                        img.save(&final_res).unwrap();
+                        debug!("gif result saved to {}", final_res);
+                    }
+                    _ => {
+                        // generate svg, then rasterize it
+                        // for anti-aliasing
+                        let svg_str = self.get_svg(context, i);
+                        let img = rasterize_svg(&svg_str, context.scale);
+                        img.save(outfile).unwrap();
+                    }
+                }
             }
-            frame += tail;
-            frames.push(frame);
         }
-        frames
     }
 }
 

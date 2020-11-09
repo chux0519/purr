@@ -1,10 +1,9 @@
-use clap::{App, Arg, crate_version};
+use clap::{crate_version, App, Arg};
 use purrmitive::core::*;
 use purrmitive::graphics::*;
 
 use env_logger::Builder;
-use log::error;
-use log::LevelFilter;
+use log::{error, info, LevelFilter};
 
 fn main() {
     let matches = App::new("Purr")
@@ -143,5 +142,7 @@ fn main() {
             unreachable!()
         }
     };
-    model_runner.run(&mut model_hillclimb, output);
+    model_runner.run(&mut model_hillclimb);
+    info!("done, now export to {}", output);
+    model_runner.save(&model_hillclimb.context, output);
 }

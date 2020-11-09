@@ -48,6 +48,11 @@ OPTIONS:
     -j <thread>            numebr of threads
 ```
 
+Output Formats:
+
+png, jpg, svg and gif are all supported. You can also include `{}` in output file name, for example, `-o "/tmp/out/out{}.png"` will save every frame in that directory as `/tmp/out/outX.png` X in range of [1, n]
+
+
 ## Example
 
 using
