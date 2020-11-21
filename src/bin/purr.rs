@@ -1,9 +1,18 @@
 use clap::{crate_version, App, Arg};
 use purrmitive::core::*;
 use purrmitive::graphics::*;
+use purrmitive::*;
 
 use env_logger::Builder;
 use log::{error, info, LevelFilter};
+
+fn create_cb<T: PurrShape + std::fmt::Debug>() -> Box<dyn FnMut(PurrState<T>)> {
+    let mut step = 1;
+    Box::new(move |x| {
+        info!("{}: {:?}", step, x);
+        step += 1;
+    })
+}
 
 fn main() {
     let matches = App::new("Purr")
@@ -98,51 +107,10 @@ fn main() {
     logger_builder.filter_level(level);
     logger_builder.init();
 
-    let model_ctx = PurrContext::new(input, input_size, output_size, alpha, parse_hex_color(bg));
-    let mut model_hillclimb = PurrHillClimbModel::new(model_ctx, 1000, 16, 100);
-    let mut model_runner: Box<dyn PurrModelRunner<M = PurrHillClimbModel>> = match shape {
-        0 => Box::new(PurrMultiThreadRunner::<Combo>::new(
-            shape_number,
-            thread_number,
-        )),
-        1 => Box::new(PurrMultiThreadRunner::<Triangle>::new(
-            shape_number,
-            thread_number,
-        )),
-        2 => Box::new(PurrMultiThreadRunner::<Rectangle>::new(
-            shape_number,
-            thread_number,
-        )),
-        3 => Box::new(PurrMultiThreadRunner::<Ellipse>::new(
-            shape_number,
-            thread_number,
-        )),
-        4 => Box::new(PurrMultiThreadRunner::<Circle>::new(
-            shape_number,
-            thread_number,
-        )),
-        5 => Box::new(PurrMultiThreadRunner::<RotatedRectangle>::new(
-            shape_number,
-            thread_number,
-        )),
-        6 => Box::new(PurrMultiThreadRunner::<Quadratic>::new(
-            shape_number,
-            thread_number,
-        )),
-        7 => Box::new(PurrMultiThreadRunner::<RotatedEllipse>::new(
-            shape_number,
-            thread_number,
-        )),
-        8 => Box::new(PurrMultiThreadRunner::<Polygon>::new(
-            shape_number,
-            thread_number,
-        )),
-        _ => {
-            error!("unsupported shape {}", shape);
-            unreachable!()
-        }
-    };
-    model_runner.run(&mut model_hillclimb);
+    let ctx = PurrContext::new(input, input_size, output_size, alpha, parse_hex_color(bg));
+    let mut model = PurrHillClimbModel::new(ctx, 1000, 16, 100);
+    let mut runner = model_runner!(shape, shape_number, thread_number, create_cb);
+    runner.run(&mut model);
     info!("done, now export to {}", output);
-    model_runner.save(&model_hillclimb.context, output);
+    runner.save(&model.context, output);
 }

@@ -29,9 +29,9 @@ pub trait PurrShape: Clone + Default + Copy + Shape + Send {}
 
 #[derive(Debug, Clone, Copy)]
 pub struct PurrState<T> {
-    shape: T,
-    color: Rgba<u8>,
-    score: f64,
+    pub shape: T,
+    pub color: Rgba<u8>,
+    pub score: f64,
 }
 
 impl<T: PurrShape> Default for PurrState<T> {
@@ -191,6 +191,7 @@ pub struct PurrMultiThreadRunner<T: PurrShape> {
     pub states: Vec<PurrState<T>>,
     pub rxs: Vec<Receiver<PurrState<T>>>,
     pub txs: Vec<Sender<PurrWorkerCmd>>,
+    pub on_step: Option<Box<dyn FnMut(PurrState<T>)>>,
 }
 
 pub trait PurrModelRunner {
@@ -208,6 +209,7 @@ impl<T: PurrShape> Default for PurrMultiThreadRunner<T> {
             states: Vec::new(),
             rxs: Vec::new(),
             txs: Vec::new(),
+            on_step: None,
         }
     }
 }
@@ -250,12 +252,10 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                 }
             }
 
-            info!(
-                "Batch: {}, score {} -> score {}",
-                batch + 1,
-                model.context.score,
-                best_state.score
-            );
+            match &mut self.on_step {
+                None => {}
+                Some(f) => f(best_state),
+            }
             // update main thread
             model.add_state(&best_state);
             self.states.push(best_state);
@@ -316,7 +316,6 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                 } else {
                     output.to_string()
                 };
-                info!("exporting: {}", outfile);
                 match suffix {
                     "svg" => {
                         let mut out = OpenOptions::new()
@@ -369,13 +368,18 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
 }
 
 impl<T: 'static + PurrShape> PurrMultiThreadRunner<T> {
-    pub fn new(shape_number: u32, thread_number: u32) -> Self {
+    pub fn new(
+        shape_number: u32,
+        thread_number: u32,
+        on_step: Option<Box<dyn FnMut(PurrState<T>)>>,
+    ) -> Self {
         PurrMultiThreadRunner {
             shape_number,
             thread_number,
             states: Vec::new(),
             rxs: Vec::new(),
             txs: Vec::new(),
+            on_step,
         }
     }
 }
@@ -384,4 +388,38 @@ pub fn rasterize_svg(svg_str: &str, scale: f32) -> RgbaImage {
     let svg = nsvg::parse_str(&svg_str, nsvg::Units::Pixel, 96.0).unwrap();
     let (width, height, raw) = svg.rasterize_to_raw_rgba(scale).unwrap();
     image::RgbaImage::from_raw(width, height, raw).unwrap()
+}
+
+#[macro_export]
+macro_rules! mt_runner {
+    ($x: ty, $shape_number: expr, $thread_number: expr, $cb_creator: expr) => {{
+        let cb = Some($cb_creator());
+        Box::new(PurrMultiThreadRunner::<$x>::new(
+            $shape_number,
+            $thread_number,
+            cb,
+        ))
+    }};
+}
+
+#[macro_export]
+macro_rules! model_runner {
+    ($mode: expr, $sn: expr, $tn: expr, $cb_creator: expr) => {{
+        let runner: Box<dyn PurrModelRunner<M = PurrHillClimbModel>> = match $mode {
+            0 => mt_runner!(Combo, $sn, $tn, $cb_creator),
+            1 => mt_runner!(Triangle, $sn, $tn, $cb_creator),
+            2 => mt_runner!(Rectangle, $sn, $tn, $cb_creator),
+            3 => mt_runner!(Ellipse, $sn, $tn, $cb_creator),
+            4 => mt_runner!(Circle, $sn, $tn, $cb_creator),
+            5 => mt_runner!(RotatedRectangle, $sn, $tn, $cb_creator),
+            6 => mt_runner!(Quadratic, $sn, $tn, $cb_creator),
+            7 => mt_runner!(RotatedEllipse, $sn, $tn, $cb_creator),
+            8 => mt_runner!(Polygon, $sn, $tn, $cb_creator),
+            _ => {
+                error!("unsupported mode {}", $mode);
+                unreachable!()
+            }
+        };
+        runner
+    }};
 }
