@@ -6,7 +6,7 @@ use purrmitive::*;
 use env_logger::Builder;
 use log::{error, info, LevelFilter};
 
-fn create_cb<T: PurrShape + std::fmt::Debug>() -> Box<dyn FnMut(PurrState<T>)> {
+fn create_cb<T: PurrShape + std::fmt::Debug>() -> Box<dyn FnMut(PurrState<T>) + Send + Sync> {
     let mut step = 1;
     Box::new(move |x| {
         info!("{}: {:?}", step, x);

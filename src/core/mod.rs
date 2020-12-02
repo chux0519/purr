@@ -191,7 +191,7 @@ pub struct PurrMultiThreadRunner<T: PurrShape> {
     pub states: Vec<PurrState<T>>,
     pub rxs: Vec<Receiver<PurrState<T>>>,
     pub txs: Vec<Sender<PurrWorkerCmd>>,
-    pub on_step: Option<Box<dyn FnMut(PurrState<T>)>>,
+    pub on_step: Option<Box<dyn FnMut(PurrState<T>) + Sync + Send>>,
 }
 
 pub trait PurrModelRunner {
@@ -371,7 +371,7 @@ impl<T: 'static + PurrShape> PurrMultiThreadRunner<T> {
     pub fn new(
         shape_number: u32,
         thread_number: u32,
-        on_step: Option<Box<dyn FnMut(PurrState<T>)>>,
+        on_step: Option<Box<dyn FnMut(PurrState<T>) + Sync + Send>>,
     ) -> Self {
         PurrMultiThreadRunner {
             shape_number,

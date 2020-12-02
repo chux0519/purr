@@ -21,7 +21,7 @@ pub use rectangle::*;
 pub use scanline::*;
 pub use triangle::*;
 
-use rand::{RngCore, SeedableRng};
+pub use rand::{RngCore, SeedableRng};
 
 pub trait Shape {
     fn rasterize(&self, w: u32, h: u32) -> Vec<Scanline>;
