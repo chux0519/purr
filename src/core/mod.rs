@@ -64,7 +64,7 @@ impl<T: PurrShape> PurrState<T> {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PurrContext {
     pub w: u32,
     pub h: u32,
@@ -159,7 +159,7 @@ pub trait PurrModel<T: PurrShape> {
     fn add_state(&mut self, state: &PurrState<T>);
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PurrHillClimbModel {
     pub context: PurrContext,
     pub n: u32,
@@ -196,9 +196,13 @@ pub struct PurrMultiThreadRunner<T: PurrShape> {
 
 pub trait PurrModelRunner {
     type M;
+    fn init(&mut self, model: &mut Self::M);
+    fn step(&mut self, model: &mut Self::M);
+    fn stop(&mut self);
     fn run(&mut self, model: &mut Self::M);
     fn get_svg(&self, context: &PurrContext, idx: usize) -> String;
     fn save(&self, context: &PurrContext, output: &str);
+    fn get_last_shape(&self) -> String;
 }
 
 impl<T: PurrShape> Default for PurrMultiThreadRunner<T> {
@@ -216,63 +220,82 @@ impl<T: PurrShape> Default for PurrMultiThreadRunner<T> {
 
 impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
     type M = PurrHillClimbModel;
-    fn run(&mut self, model: &mut Self::M) {
-        let pool = ThreadPool::new(self.thread_number as usize);
-        // spawn workers
-        let mut worker_model_m = model.m / self.thread_number;
-        if model.m % self.thread_number != 0 {
-            worker_model_m += 1;
+    fn init(&mut self, model: &mut Self::M) {
+        if self.txs.is_empty() && self.rxs.is_empty() {
+            let pool = ThreadPool::new(self.thread_number as usize);
+            // spawn workers
+            let mut worker_model_m = model.m / self.thread_number;
+            if model.m % self.thread_number != 0 {
+                worker_model_m += 1;
+            }
+            for _ in 0..self.thread_number {
+                let (cmd_s, cmd_r) = bounded(1);
+                let (res_s, res_r) = bounded(1);
+                let mut worker_model = model.clone();
+                worker_model.m = worker_model_m;
+                worker_model.context.rng = SmallRng::from_entropy();
+                let mut worker = PurrWorker::new(worker_model, cmd_r, res_s);
+                self.txs.push(cmd_s);
+                self.rxs.push(res_r);
+                pool.execute(move || {
+                    worker.start();
+                });
+            }
+            self.states.clear();
         }
-        for _ in 0..self.thread_number {
-            let (cmd_s, cmd_r) = bounded(1);
-            let (res_s, res_r) = bounded(1);
-            let mut worker_model = model.clone();
-            worker_model.m = worker_model_m;
-            worker_model.context.rng = SmallRng::from_entropy();
-            let mut worker = PurrWorker::new(worker_model, cmd_r, res_s);
-            self.txs.push(cmd_s);
-            self.rxs.push(res_r);
-            pool.execute(move || {
-                worker.start();
-            });
+    }
+
+    fn step(&mut self, model: &mut Self::M) {
+        if self.txs.is_empty() || self.rxs.is_empty() {
+            return;
         }
 
-        for batch in 0..self.shape_number {
-            // wake all workers
-            for tx in &self.txs {
-                tx.send(PurrWorkerCmd::Start).unwrap();
-            }
+        for tx in &self.txs {
+            tx.send(PurrWorkerCmd::Start).unwrap();
+        }
 
-            // wait for result
-            let mut best_state = PurrState::default();
-            for rx in &self.rxs {
-                let state = rx.recv().unwrap();
-                if state.score < best_state.score {
-                    best_state = state;
-                }
-            }
-
-            match &mut self.on_step {
-                None => {}
-                Some(f) => f(best_state),
-            }
-            // update main thread
-            model.add_state(&best_state);
-            self.states.push(best_state);
-
-            // update worker threads
-            for tx in &self.txs {
-                tx.send(PurrWorkerCmd::UpdateScore(model.context.score))
-                    .unwrap();
+        // wait for result
+        let mut best_state = PurrState::default();
+        for rx in &self.rxs {
+            let state = rx.recv().unwrap();
+            if state.score < best_state.score {
+                best_state = state;
             }
         }
 
+        match &mut self.on_step {
+            None => {}
+            Some(f) => f(best_state),
+        }
+        // update main thread
+        model.add_state(&best_state);
+        self.states.push(best_state);
+
+        // update worker threads
+        for tx in &self.txs {
+            tx.send(PurrWorkerCmd::UpdateScore(model.context.score))
+                .unwrap();
+        }
+    }
+
+    fn stop(&mut self) {
         // stop workers
         for tx in &self.txs {
             tx.send(PurrWorkerCmd::End).unwrap();
         }
+        self.rxs.clear();
+        self.txs.clear();
+        // pool.join();
+    }
 
-        pool.join();
+    fn run(&mut self, model: &mut Self::M) {
+        self.init(model);
+
+        for batch in 0..self.shape_number {
+            self.step(model);
+        }
+
+        self.stop();
     }
 
     fn get_svg(&self, context: &PurrContext, idx: usize) -> String {
@@ -297,6 +320,13 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
         output += "</g>";
         output += "</svg>";
         output
+    }
+
+    fn get_last_shape(&self) -> String {
+        match self.states.last() {
+            Some(s) => s.to_svg(),
+            None => "".to_string(),
+        }
     }
 
     fn save(&self, context: &PurrContext, output: &str) {
@@ -405,7 +435,7 @@ macro_rules! mt_runner {
 #[macro_export]
 macro_rules! model_runner {
     ($mode: expr, $sn: expr, $tn: expr, $cb_creator: expr) => {{
-        let runner: Box<dyn PurrModelRunner<M = PurrHillClimbModel>> = match $mode {
+        let runner: Box<dyn PurrModelRunner<M = PurrHillClimbModel> + Sync + Send> = match $mode {
             0 => mt_runner!(Combo, $sn, $tn, $cb_creator),
             1 => mt_runner!(Triangle, $sn, $tn, $cb_creator),
             2 => mt_runner!(Rectangle, $sn, $tn, $cb_creator),
