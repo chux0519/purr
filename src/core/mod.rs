@@ -171,6 +171,12 @@ impl PurrHillClimbModel {
     pub fn new(context: PurrContext, n: u32, m: u32, age: u32) -> Self {
         PurrHillClimbModel { context, n, m, age }
     }
+    pub fn reset(&mut self, context: PurrContext, n: u32, m: u32, age: u32) {
+        self.context = context;
+        self.n = n;
+        self.m = m;
+        self.age = age;
+    }
 }
 
 impl<T: PurrShape> PurrModel<T> for PurrHillClimbModel {
@@ -221,6 +227,10 @@ impl<T: PurrShape> Default for PurrMultiThreadRunner<T> {
 impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
     type M = PurrHillClimbModel;
     fn init(&mut self, model: &mut Self::M) {
+        // stop all threads first
+        self.stop();
+        self.states.clear();
+        // new pool
         if self.txs.is_empty() && self.rxs.is_empty() {
             let pool = ThreadPool::new(self.thread_number as usize);
             // spawn workers
@@ -241,7 +251,6 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
                     worker.start();
                 });
             }
-            self.states.clear();
         }
     }
 
