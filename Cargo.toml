@@ -1,38 +1,5 @@
-[package]
-name = "purrmitive"
-version = "0.1.3"
-authors = ["chux0519 <chuxdesign@hotmail.com>"]
-edition = "2018"
-license-file = "LICENSE"
-description = "Reproducing images with geometric primitives."
-homepage = "https://github.com/chux0519/purr"
-documentation = "https://docs.rs/purrmitive"
-repository = "https://github.com/chux0519/purr"
-readme = "README.md"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-image = "0.23.8"
-gif = "0.10.3"
-rand = {version = "0.7.3", features = ["small_rng"]}
-rand_distr = "0.2.2"
-crossbeam-channel = "0.4"
-threadpool = "1.0"
-num_cpus = "1.0"
-clap = {version = "2.33.1", optional = true}
-log = "0.4"
-env_logger="0.7.1"
-dyn-fmt = "0.3.0"
-
-[dependencies.nsvg]
-version = "0.5.1"
-default-features = false
-
-[features]
-cli = ["clap"]
-
-[[bin]]
-name = "purr"
-required-features = ["cli"]
-
+[workspace]
+members = [
+    "purrmitive",
+    "purrmitive-ffi"
+]
