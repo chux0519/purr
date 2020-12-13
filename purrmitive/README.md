@@ -1,16 +1,4 @@
-# Purr
-
-It's a rust implementation of fogleman's [primitive](https://github.com/fogleman/primitive).
-
-Created at Rusty Days Hackathon, 2020.
-
-For more details about the algorithm, check this out: [Hill Climbing](https://en.wikipedia.org/wiki/Hill_climbing)
-
-## Feature
-
-Simple rule, powerful result
-
-### Usage
+# purrmitive
 
 Use `purrmitive` as lib
 
