@@ -32,6 +32,15 @@ pub struct PurrmitiveColor {
     pub a: u8,
 }
 
+// TODO: get this info to Qt side, and do the svg concat
+#[repr(C)]
+pub struct PurrmitiveContextInfo {
+    pub w: u32,
+    pub h: u32,
+    pub scale: f32,
+    pub score: f64,
+}
+
 fn create_cb<T: PurrShape + std::fmt::Debug>() -> Box<dyn FnMut(PurrState<T>) + Send + Sync> {
     let mut step = 1;
     Box::new(move |x| {
@@ -55,6 +64,7 @@ pub unsafe extern "C" fn purrmitive_set_verbose(verbose: i32) {
 
 #[no_mangle]
 pub unsafe extern "C" fn purrmitive_init(param: *const PurrmitiveParam) {
+    info!("purrmitive_init");
     let input = CStr::from_ptr((*param).input)
         .to_string_lossy()
         .into_owned();
@@ -63,6 +73,7 @@ pub unsafe extern "C" fn purrmitive_init(param: *const PurrmitiveParam) {
     match MODEL.get_mut() {
         Some(m) => {
             // reset
+            info!("reset model");
             m.reset(ctx, 1000, 16, 100);
         }
         None => {
@@ -93,6 +104,7 @@ pub unsafe extern "C" fn purrmitive_init(param: *const PurrmitiveParam) {
     match RUNNER.get_mut() {
         Some(r) => {
             // init or reinit
+            info!("init/reinit runner");
             r.init(MODEL.get_mut().unwrap());
         }
         None => error!("Failed to init runner!"),
@@ -144,6 +156,27 @@ pub unsafe extern "C" fn purrmitive_get_bg() -> PurrmitiveColor {
                 g: 0,
                 b: 0,
                 a: 0,
+            }
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn purrmitive_get_ctx_info() -> PurrmitiveContextInfo {
+    match MODEL.get() {
+        Some(m) => PurrmitiveContextInfo {
+            w: m.context.w,
+            h: m.context.h,
+            scale: m.context.scale,
+            score: m.context.score,
+        },
+        None => {
+            error!("No context info: Model is not found!");
+            PurrmitiveContextInfo {
+                w: 0,
+                h: 0,
+                scale: 0.0,
+                score: 0.0,
             }
         }
     }
