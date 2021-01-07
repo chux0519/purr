@@ -32,7 +32,6 @@ pub struct PurrmitiveColor {
     pub a: u8,
 }
 
-// TODO: get this info to Qt side, and do the svg concat
 #[repr(C)]
 pub struct PurrmitiveContextInfo {
     pub w: u32,
