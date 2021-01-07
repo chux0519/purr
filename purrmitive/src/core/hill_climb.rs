@@ -19,7 +19,7 @@ pub fn best_hill_climb<T: PurrShape>(
             "climb No.{}: {} -> {}",
             i, best_rand_state.score, climb_state.score
         );
-        if climb_state.score < best_state.score {
+        if best_state.score - climb_state.score > 1e-6 {
             debug!(
                 "found better state in climb No.{}: {} -> {}",
                 i, best_state.score, climb_state.score
@@ -50,10 +50,9 @@ pub fn hill_climb<T: PurrShape>(
         let lines = cur_state.shape.rasterize(ctx.w, ctx.h);
         let alpha = clamp(ctx.rng.gen_range(-10, 11) as i32 + ctx.alpha as i32, 1, 255);
         if lines.is_empty() {
-            cur_state = state;
+            cur_state = best_state;
             continue;
         }
-        assert!(!lines.is_empty());
         {
             let cur = ctx.current_img.read().unwrap();
             cur_state.color = compute_color(&ctx.origin_img, &cur, &lines, alpha as u8);
@@ -61,7 +60,7 @@ pub fn hill_climb<T: PurrShape>(
                 diff_partial_with_color(&ctx.origin_img, &cur, &lines, ctx.score, cur_state.color);
         }
 
-        if cur_state.score < best_state.score {
+        if best_state.score - cur_state.score > 1e-6 {
             // find a new, better state
             best_state = cur_state;
             i = 0;
@@ -86,12 +85,15 @@ pub fn best_random_step<T: PurrShape>(ctx: &mut PurrContext, n: u32) -> PurrStat
 }
 pub fn random_step<T: PurrShape>(ctx: &mut PurrContext) -> PurrState<T> {
     // random generate triangle
-    let t = T::random(ctx.w, ctx.h, &mut ctx.rng);
-    let lines = t.rasterize(ctx.w, ctx.h);
-    if lines.is_empty() {
-        return PurrState::default();
+    let mut t = T::random(ctx.w, ctx.h, &mut ctx.rng);
+    let mut lines = Vec::new();
+    loop {
+        lines = t.rasterize(ctx.w, ctx.h);
+        if !lines.is_empty() {
+            break;
+        }
+        t = T::random(ctx.w, ctx.h, &mut ctx.rng);
     }
-    assert!(!lines.is_empty());
     let cur = ctx.current_img.read().unwrap();
     let color = compute_color(&ctx.origin_img, &cur, &lines, ctx.alpha);
     let score = diff_partial_with_color(&ctx.origin_img, &cur, &lines, ctx.score, color);

@@ -55,6 +55,16 @@ impl Triangle {
 
         a1 > min_degree && a2 > min_degree && a3 > min_degree
     }
+
+    fn clockwise(&self) -> [Point; 3] {
+        let val = (self.b.y - self.a.y) * (self.c.x - self.b.x)
+            - (self.b.x - self.a.x) * (self.c.y - self.b.y);
+        if val >= 0 {
+            [self.a, self.c, self.b]
+        } else {
+            [self.a, self.b, self.c]
+        }
+    }
 }
 
 impl Shape for Triangle {
@@ -66,7 +76,8 @@ impl Shape for Triangle {
         }
     }
     fn rasterize(&self, w: u32, h: u32) -> Vec<Scanline> {
-        let points = vec![self.a, self.b, self.c];
+        // clockwise this
+        let points = Vec::from(self.clockwise());
         let lines = rasterize_polygon(&points, w, h);
         let mut visible_lines: Vec<Scanline> = lines
             .into_iter()

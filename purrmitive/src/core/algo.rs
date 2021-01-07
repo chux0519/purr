@@ -73,7 +73,7 @@ pub fn diff_partial(
     score: f64,
 ) -> f64 {
     let (w, h) = origin_img.dimensions();
-    let mut total: u64 = ((score * 255.0) * (score * 255.0) * (w * h * 4) as f64) as u64;
+    let mut total: f64 = (score * 255.0) * (score * 255.0) * (w * h * 4) as f64;
 
     for line in lines {
         for x in line.x1..=line.x2 {
@@ -106,15 +106,15 @@ pub fn diff_partial(
             let dg2 = og - ag;
             let db2 = ob - ab;
             let da2 = oa - aa;
-            total += (dr2 * dr2 + dg2 * dg2 + db2 * db2 + da2 * da2) as u64;
-            total -= (dr1 * dr1 + dg1 * dg1 + db1 * db1 + da1 * da1) as u64;
+            total += (dr2 * dr2 + dg2 * dg2 + db2 * db2 + da2 * da2) as f64;
+            total -= (dr1 * dr1 + dg1 * dg1 + db1 * db1 + da1 * da1) as f64;
         }
     }
-    ((total as f64) / (w * h * 4) as f64).sqrt() / 255.0
+    (total / (w * h * 4) as f64).sqrt() / 255.0
 }
 
 pub fn diff_full(origin_img: &RgbaImage, current_img: &RgbaImage) -> f64 {
-    let mut total = 0;
+    let mut total = 0.0;
     let (w, h) = origin_img.dimensions();
     for x in 0..w {
         for y in 0..h {
@@ -137,10 +137,10 @@ pub fn diff_full(origin_img: &RgbaImage, current_img: &RgbaImage) -> f64 {
             let dg = og - cg;
             let db = ob - cb;
             let da = oa - ca;
-            total += (dr * dr + dg * dg + db * db + da * da) as u64;
+            total += (dr * dr + dg * dg + db * db + da * da) as f64;
         }
     }
-    (total as f64 / (w * h * 4) as f64).sqrt() / 255.0
+    (total / (w * h * 4) as f64).sqrt() / 255.0
 }
 
 pub fn diff_partial_with_color(
@@ -150,6 +150,9 @@ pub fn diff_partial_with_color(
     score: f64,
     color: Rgba<u8>,
 ) -> f64 {
+    if lines.is_empty() {
+        return score;
+    }
     let (w, h) = origin_img.dimensions();
     let mut total: u64 = ((score * 255.0) * (score * 255.0) * (w * h * 4) as f64) as u64;
 

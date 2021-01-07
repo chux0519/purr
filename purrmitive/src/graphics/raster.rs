@@ -89,16 +89,14 @@ pub fn rasterize_line(
         // set x1 and x2
         let y = y0 - ymin;
         if y >= 0 && y < h as i32 {
-            if x0 >= 0 {
-                let x = clamp(x0, 0, w as i32 - 1);
-                if rhs {
-                    buf_rhs[y as usize] = x;
-                } else if lhs {
-                    buf_lhs[y as usize] = x;
-                } else {
-                    buf_lhs[y as usize] = std::cmp::min(x, buf_lhs[y as usize]);
-                    buf_rhs[y as usize] = std::cmp::max(x, buf_rhs[y as usize]);
-                }
+            let x = clamp(x0, 0, w as i32 - 1);
+            if rhs {
+                buf_rhs[y as usize] = x;
+            } else if lhs {
+                buf_lhs[y as usize] = x;
+            } else {
+                buf_lhs[y as usize] = std::cmp::min(x, buf_lhs[y as usize]);
+                buf_rhs[y as usize] = std::cmp::max(x, buf_rhs[y as usize]);
             }
         }
         let e2 = 2 * err;
