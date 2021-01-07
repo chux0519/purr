@@ -511,7 +511,7 @@ dependencies = [
 
 [[package]]
 name = "purrmitive"
-version = "0.1.3"
+version = "0.2.0"
 dependencies = [
  "clap",
  "crossbeam-channel 0.4.4",
