@@ -20,7 +20,7 @@ pub struct PurrmitiveParam {
     pub mode: i32,
     pub resize: u32,
     pub size: u32,
-    pub count: u32,
+    pub bg: u32, // r, g, b, a
     pub input: *const c_char,
 }
 
@@ -40,11 +40,10 @@ pub struct PurrmitiveContextInfo {
     pub score: f64,
 }
 
-fn create_cb<T: PurrShape + std::fmt::Debug>() -> Box<dyn FnMut(PurrState<T>) + Send + Sync> {
-    let mut step = 1;
-    Box::new(move |x| {
+fn create_cb<T: PurrShape + std::fmt::Debug>() -> Box<dyn FnMut(usize, PurrState<T>) + Send + Sync>
+{
+    Box::new(move |step, x| {
         info!("step {}: {:?}", step, x);
-        step += 1;
     })
 }
 
@@ -88,12 +87,7 @@ pub unsafe extern "C" fn purrmitive_init(param: *const PurrmitiveParam) {
     match RUNNER.get() {
         Some(_) => {}
         None => {
-            let runner = model_runner!(
-                (*param).mode,
-                (*param).count,
-                num_cpus::get() as u32,
-                create_cb
-            );
+            let runner = model_runner!((*param).mode, u32::MAX, num_cpus::get() as u32, create_cb);
             match RUNNER.set(runner) {
                 Ok(()) => {}
                 Err(_) => error!("Failed to create runner!"),

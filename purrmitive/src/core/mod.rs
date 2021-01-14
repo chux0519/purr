@@ -197,7 +197,7 @@ pub struct PurrMultiThreadRunner<T: PurrShape> {
     pub states: Vec<PurrState<T>>,
     pub rxs: Vec<Receiver<PurrState<T>>>,
     pub txs: Vec<Sender<PurrWorkerCmd>>,
-    pub on_step: Option<Box<dyn FnMut(PurrState<T>) + Sync + Send>>,
+    pub on_step: Option<Box<dyn FnMut(usize, PurrState<T>) + Sync + Send>>,
 }
 
 pub trait PurrModelRunner {
@@ -272,13 +272,14 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
             }
         }
 
-        match &mut self.on_step {
-            None => {}
-            Some(f) => f(best_state),
-        }
         // update main thread
         model.add_state(&best_state);
         self.states.push(best_state);
+
+        match &mut self.on_step {
+            None => {}
+            Some(f) => f(self.states.len(), best_state),
+        }
 
         // update worker threads
         for tx in &self.txs {
@@ -410,7 +411,7 @@ impl<T: 'static + PurrShape> PurrMultiThreadRunner<T> {
     pub fn new(
         shape_number: u32,
         thread_number: u32,
-        on_step: Option<Box<dyn FnMut(PurrState<T>) + Sync + Send>>,
+        on_step: Option<Box<dyn FnMut(usize, PurrState<T>) + Sync + Send>>,
     ) -> Self {
         PurrMultiThreadRunner {
             shape_number,
