@@ -83,25 +83,15 @@ pub unsafe extern "C" fn purrmitive_init(param: *const PurrmitiveParam) {
         }
     }
 
-    // if not runner, new one
-    match RUNNER.get() {
-        Some(_) => {}
-        None => {
-            let runner = model_runner!((*param).mode, u32::MAX, num_cpus::get() as u32, create_cb);
-            match RUNNER.set(runner) {
-                Ok(()) => {}
-                Err(_) => error!("Failed to create runner!"),
-            };
-        }
-    }
-    match RUNNER.get_mut() {
-        Some(r) => {
-            // init or reinit
-            info!("init/reinit runner");
-            r.init(MODEL.get_mut().unwrap());
-        }
-        None => error!("Failed to init runner!"),
-    }
+    // take runner, reinit it
+    RUNNER.take();
+
+    let mut runner = model_runner!((*param).mode, u32::MAX, num_cpus::get() as u32, create_cb);
+    runner.init(MODEL.get_mut().unwrap());
+    match RUNNER.set(runner) {
+        Ok(()) => {}
+        Err(_) => error!("Failed to create runner!"),
+    };
 }
 
 #[no_mangle]
