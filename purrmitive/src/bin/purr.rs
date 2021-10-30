@@ -35,8 +35,15 @@ fn main() {
         .arg(
             Arg::with_name("number")
                 .short("n")
-                .help("number of shapes")
-                .required(true)
+                .help("number of shapes, default to 100")
+                .required(false)
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("percision")
+                .short("p")
+                .help("percision in f64, like 0.95, which means diff score is 0.05(1 - 0.95)")
+                .required(false)
                 .takes_value(true),
         )
         .arg(
@@ -85,7 +92,12 @@ fn main() {
     let mut logger_builder = Builder::new();
     let input = matches.value_of("input").unwrap();
     let output = matches.value_of("output").unwrap();
-    let shape_number = matches.value_of("number").unwrap().parse().unwrap();
+    let shape_number = matches.value_of("number").unwrap_or("100").parse().unwrap();
+    let percision: f64 = matches
+        .value_of("percision")
+        .unwrap_or("0.0")
+        .parse()
+        .unwrap();
     let shape = matches.value_of("mode").unwrap_or("1").parse().unwrap();
     let thread_number = matches
         .value_of("thread")
@@ -109,7 +121,7 @@ fn main() {
     let ctx = PurrContext::new(input, input_size, output_size, alpha, parse_hex_color(bg));
     let mut model = PurrHillClimbModel::new(ctx, 1000, 16, 100);
     let mut runner = model_runner!(shape, shape_number, thread_number, create_cb);
-    runner.run(&mut model);
+    runner.run(&mut model, 1.0 - percision);
     info!("done, now export to {}", output);
     runner.save(&model.context, output);
 }

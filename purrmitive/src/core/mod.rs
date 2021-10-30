@@ -205,7 +205,7 @@ pub trait PurrModelRunner {
     fn init(&mut self, model: &mut Self::M);
     fn step(&mut self, model: &mut Self::M);
     fn stop(&mut self);
-    fn run(&mut self, model: &mut Self::M);
+    fn run(&mut self, model: &mut Self::M, score: f64);
     fn get_svg(&self, context: &PurrContext, idx: usize) -> String;
     fn save(&self, context: &PurrContext, output: &str);
     fn get_last_shape(&self) -> String;
@@ -298,11 +298,20 @@ impl<T: 'static + PurrShape> PurrModelRunner for PurrMultiThreadRunner<T> {
         // pool.join();
     }
 
-    fn run(&mut self, model: &mut Self::M) {
+    fn run(&mut self, model: &mut Self::M, score: f64) {
         self.init(model);
 
-        for batch in 0..self.shape_number {
-            self.step(model);
+        if score > 0.0 && score < 1.0 {
+            loop {
+                self.step(model);
+                if model.context.score <= score {
+                    break;
+                }
+            }
+        } else {
+            for _ in 0..self.shape_number {
+                self.step(model);
+            }
         }
 
         self.stop();
