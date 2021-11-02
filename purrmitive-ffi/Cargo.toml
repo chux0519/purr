@@ -16,7 +16,7 @@ num_cpus = "1.0"
 
 [lib]
 name = "purrmitive_ffi"
-crate-type = ["cdylib"]
+crate-type = ["staticlib", "cdylib"]
 
 [build-dependencies]
-cbindgen = "0.15"
+cbindgen = "0.20"
